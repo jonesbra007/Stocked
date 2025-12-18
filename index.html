@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stocked | Meal Planner V.36</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #F9F7F2;
+            --card-bg: #FFFFFF;
+            --primary: #5C8D89;
+            --primary-dark: #416B67;
+            --accent: #D97D5D;
+            --text-main: #2C3333;
+            --text-light: #7E8A8A;
+            --danger: #e74c3c;
+            --border-radius: 16px;
+            --shadow: 0 8px 24px rgba(44, 51, 51, 0.06);
+            --border: 1px solid #E6E2DA;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif; 
+            padding-bottom: 80px;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3, .nav-brand, .recipe-title, .cook-title, .auth-title, .confirm-title {
+            font-family: 'DM Serif Display', serif;
+            letter-spacing: 0.5px;
+        }
+
+        nav {
+            background: rgba(249, 247, 242, 0.95);
+            padding: 1.5rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            backdrop-filter: blur(10px);
+        }
+        .nav-brand { font-size: 1.8rem; color: var(--text-main); display: flex; align-items: center; gap: 12px; }
+        .nav-brand i { color: var(--primary); }
+        
+        .nav-tabs { background: #EBE8E0; padding: 4px; border-radius: 30px; display: flex; gap: 4px; }
+        .nav-tabs button {
+            background: none; border: none; padding: 0.6rem 1.5rem; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; color: var(--text-light); border-radius: 25px; transition: all 0.3s ease; font-family: 'Inter', sans-serif;
+        }
+        .nav-tabs button.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        
+        .logout-btn { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; margin-left: 1rem; transition: 0.2s; }
+        .logout-btn:hover { color: var(--accent); }
+
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+        .page-section { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .page-section.active { display: block; opacity: 1; }
+
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
+        .header-row h3, .header-row h2 { margin-bottom: 0; border: none; padding: 0; }
+        
+        .btn-sm {
+            padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid #D1D5DB; 
+            background: white; color: var(--text-light); font-weight: 600; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; gap: 6px; font-family: 'Inter', sans-serif;
+        }
+        .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-sm i { font-size: 0.9rem; }
+
+        /* Custom Inputs */
+        input[type="text"], input[type="email"], input[type="password"], textarea {
+            padding: 0.8rem 1rem; border: 1px solid #D1D5DB; border-radius: 8px; background: #FFFFFF; width: 100%; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: 0.2s;
+        }
+        input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.1); }
+
+        /* Custom Select Styles */
+        select { display: none; } 
+
+        .custom-select-container {
+            position: relative;
+            width: 170px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+        }
+        
+        .modal .custom-select-container { width: 100%; } 
+
+        .select-selected {
+            background-color: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #D1D5DB;
+            padding: 0.8rem 1rem;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .select-selected:after {
+            content: "";
+            width: 0.8em; height: 0.8em;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235C8D89' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-size: contain;
+            background-position: center;
+            transform: rotate(0deg);
+            transition: transform 0.2s;
+            flex-shrink: 0; 
+            margin-left: 10px;
+        }
+
+        .select-selected.select-arrow-active:after {
+            transform: rotate(180deg);
+        }
+
+        .select-selected.select-arrow-active {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.1);
+        }
+
+        .select-items {
+            position: absolute;
+            background-color: #ffffff;
+            top: 110%;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid #E6E2DA;
+            overflow: hidden;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .select-hide { display: none; }
+
+        .select-items div {
+            color: var(--text-main);
+            padding: 0.8rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f7f7f7;
+            transition: 0.1s;
+            white-space: nowrap;
+        }
+
+        .select-items div:last-child { border-bottom: none; }
+
+        .select-items div:hover, .same-as-selected {
+            background-color: var(--primary);
+            color: #ffffff;
+        }
+
+        /* Filtering & Category Management */
+        .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+        .filter-scroll { display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.5rem 0 0.5rem 0; scrollbar-width: none; flex-grow: 1; }
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        
+        .filter-pill {
+            background: #EBE8E0; border: none; padding: 0.5rem 1.2rem; border-radius: 20px;
+            font-size: 0.85rem; font-weight: 600; color: var(--text-light); white-space: nowrap; cursor: pointer; transition: 0.2s;
+        }
+        .filter-pill:hover { background: #E0DDD5; }
+        .filter-pill.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(92, 141, 137, 0.3); }
+        
+        .btn-manage-cats {
+            background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; padding: 8px; transition: 0.2s; border-radius: 50%;
+        }
+        .btn-manage-cats:hover { background: #EBE8E0; color: var(--primary); }
+
+        /* Category List */
+        .cat-list { list-style: none; margin-top: 1rem; }
+        
+        .cat-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.8rem; background: #fff; border: 1px solid #eee; border-radius: 8px; margin-bottom: 0.5rem;
+            cursor: grab; transition: 0.2s;
+        }
+        .cat-item:active { cursor: grabbing; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: scale(1.02); z-index: 10; }
+        .cat-item.dragging { opacity: 0.5; background: #f9f9f9; }
+        .cat-grip { color: #ccc; margin-right: 10px; cursor: grab; }
+        .cat-name { flex-grow: 1; font-weight: 500; }
+        .cat-delete { color: #ccc; cursor: pointer; padding: 5px; }
+        .cat-delete:hover { color: var(--danger); }
+
+        /* Recipe Cards */
+        .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; align-items: start; }
+        .recipe-card {
+            background: var(--card-bg); border-radius: var(--border-radius); padding: 1.5rem; border: var(--border); box-shadow: var(--shadow);
+            position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; min-height: 260px; overflow: hidden; 
+        }
+        .recipe-card:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(44, 51, 51, 0.1); border-color: var(--primary); }
+        .clickable-area { cursor: pointer; flex-grow: 1; display: flex; flex-direction: column; }
+        .recipe-details { font-size: 0.95rem; color: var(--text-light); margin-bottom: 1.2rem; }
+        .recipe-details h4 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; color: var(--text-main); opacity: 0.6; }
+        .ingredient-list { margin-left: 1rem; margin-bottom: 1rem; line-height: 1.6; }
+        .instruction-preview { position: relative; max-height: 60px; overflow: hidden; transition: max-height 0.5s; white-space: pre-line; line-height: 1.7; }
+        .instruction-preview::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 50px; background: linear-gradient(transparent, var(--card-bg)); pointer-events: none; transition: opacity 0.3s; }
+        .recipe-card.expanded .instruction-preview::after { opacity: 0; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .recipe-title { font-size: 1.4rem; color: var(--text-main); line-height: 1.2; }
+        .cat-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; color: white; background: #ccc; display: inline-block; margin-bottom: 0.5rem; letter-spacing: 0.5px; }
+        .fav-btn { background: none; border: none; cursor: pointer; color: #D1D5DB; font-size: 1.2rem; z-index: 2; transition: 0.2s;}
+        .fav-btn:hover, .fav-btn.active { color: #f1c40f; }
+        .card-actions { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; border-top: 1px dashed #E6E2DA; padding-top: 1rem; margin-top: auto; }
+        .action-buttons { display: flex; gap: 0.8rem; }
+        .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; transition: 0.2s; z-index: 2;}
+        .btn-icon:hover { color: var(--primary); transform: scale(1.1); }
+        .btn-icon.delete:hover { color: var(--danger); }
+        .btn-cook { background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; z-index: 2; }
+        .btn-cook:hover { background: var(--primary-dark); }
+        .expand-hint { font-size: 0.75rem; color: #9CA3AF; transition: 0.3s; font-weight: 500; }
+
+        .planner-grid { display: grid; grid-template-columns: 80px repeat(7, 1fr); gap: 8px; overflow-x: auto; margin-bottom: 2.5rem; background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: var(--border); }
+        .day-header { font-family: 'DM Serif Display', serif; text-align: center; padding-bottom: 1rem; font-size: 1.1rem; color: var(--text-main); border-bottom: 2px solid var(--bg-color); margin-bottom: 0.5rem; }
+        .meal-row-label { font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        .meal-row-label i { font-size: 1.1rem; margin-bottom: 4px; color: var(--primary); opacity: 0.7; }
+        .meal-slot { background: #F7F5F0; border: 1px solid transparent; border-radius: 12px; min-height: 90px; padding: 4px; font-size: 0.8rem; position: relative; transition: 0.2s; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .meal-slot:hover { background: #EBE8E0; }
+        .meal-slot.drag-over { background: #E8F3F1; border: 2px dashed var(--primary); }
+        .meal-slot[data-type^="dinner"] { min-height: 45px; padding: 2px; }
+        .meal-slot[data-type^="dinner"] .slot-placeholder { font-size: 0.8rem; }
+        .slot-placeholder { color: #D1D5DB; font-size: 1.1rem; pointer-events: none; transition: 0.2s; }
+        .meal-slot:hover .slot-placeholder { color: var(--primary); transform: scale(1.2); }
+        .planned-meal { background: white; padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); cursor: default; font-weight: 500; font-size: 0.85rem; }
+        .meal-slot[data-type^="dinner"] .planned-meal { padding: 2px 8px; font-size: 0.75rem; border-radius: 6px; }
+        .remove-meal { cursor: pointer; color: #D1D5DB; margin-left: 5px; transition: 0.2s;}
+        .remove-meal:hover { color: var(--accent); }
+
+        .tools-section { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        @media (max-width: 768px) { .tools-section { grid-template-columns: 1fr; } .planner-grid { display: block; } .meal-slot { margin-bottom: 10px; } }
+        .tool-card { background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow); display: flex; flex-direction: column; max-height: 650px; border: var(--border); }
+        .tool-card h3 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; margin:0;}
+        .tool-card h3 i { color: var(--accent); font-size: 1.2rem; }
+        .inventory-container, .grocery-container { flex-grow: 1; overflow-y: auto; margin-bottom: 1.5rem; padding-right: 5px; }
+        .inv-category-header { color: var(--primary); font-weight: 700; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.5rem 0; margin-top: 1rem; border-bottom: 1px solid rgba(92, 141, 137, 0.2); margin-bottom: 0.5rem; }
+        .inv-category-header:first-child { margin-top: 0; }
+        .inventory-item-row, .grocery-item { display: flex; align-items: center; padding: 0.5rem 0.5rem; border-radius: 6px; transition: 0.2s; margin-bottom: 2px; }
+        .inventory-item-row:hover, .grocery-item:hover { background: #F9F7F2; }
+        .inventory-item-row input, .grocery-item input { margin-right: 12px; accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; border-color: #D1D5DB; }
+        .inventory-item-row label, .grocery-item label { cursor: pointer; flex-grow: 1; font-size: 0.95rem; color: var(--text-main); font-weight: 400; }
+        .delete-item { font-size: 0.8rem; color: #D1D5DB; cursor: pointer; margin-left: 8px; padding: 4px; transition: 0.2s; }
+        .delete-item:hover { color: var(--danger); transform: scale(1.1); }
+        .grocery-item.manual-item { background-color: #F0F4F4; border-left: 3px solid var(--text-light); }
+        .delete-manual { font-size: 0.8rem; color: #bbb; cursor: pointer; margin-left: 8px;}
+        .delete-manual:hover { color: var(--accent); }
+        
+        .inventory-add-row { display: flex; gap: 0.5rem; align-items: center; }
+        button { cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
+        .inventory-add-row button { background: var(--primary); color: white; border: none; padding: 0 1.2rem; border-radius: 8px; height: 42px; }
+        .inventory-add-row button:hover { background: var(--primary-dark); }
+        .fab { position: fixed; bottom: 2.5rem; right: 2.5rem; background: var(--primary); color: white; width: 64px; height: 64px; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 10px 25px rgba(92, 141, 137, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 200; transition: all 0.3s ease; }
+        .fab:hover { transform: scale(1.1) rotate(90deg); background: var(--primary-dark); }
+
+        /* --- Modals --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 51, 51, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-overlay.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal { background: white; padding: 2.5rem; border-radius: 24px; width: 95%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); max-height: 85vh; overflow-y: auto; position: relative; }
+        .recipe-picker-list { list-style: none; margin-top: 1rem; }
+        .picker-item { padding: 1rem 1.2rem; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-radius: 8px; }
+        .picker-item:hover { background: #F7F5F0; color: var(--primary); padding-left: 1.5rem; }
+        .picker-item:last-child { border-bottom: none; }
+        .modal-header-row { 
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
+            position: sticky; top: 0; background: white; z-index: 20; padding-top: 5px;
+        }
+        
+        .modal h2 { margin-bottom: 0; color: var(--primary-dark); font-size: 1.8rem; }
+        .modal-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-light); transition: 0.2s; }
+        .modal-close-btn:hover { color: var(--danger); transform: scale(1.1); }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.6rem; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.5px;}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
+        button.primary { background: var(--primary); color: white; border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1rem; }
+        button.primary:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(92, 141, 137, 0.3); }
+        button.secondary { background: #F3F4F6; color: var(--text-main); border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1rem; }
+        button.secondary:hover { background: #E5E7EB; }
+        button.danger { background: var(--danger); color: white; border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1rem; }
+        button.danger:hover { background: #c0392b; box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3); }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        #confirm-modal { z-index: 2100; }
+
+        #auth-modal .modal { max-width: 400px; text-align: center; }
+        #auth-error { color: var(--danger); margin-top: 1rem; font-size: 0.9rem; display:none;}
+        .auth-toggle { margin-top: 1rem; font-size: 0.9rem; color: var(--text-light); cursor: pointer; text-decoration: underline; }
+        .password-wrapper { position: relative; }
+        .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-light); cursor: pointer; font-size: 1rem; transition: color 0.2s; }
+        .password-toggle:hover { color: var(--primary); }
+
+        #cook-mode-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; z-index: 2000; display: none; flex-direction: column; overflow-y: auto; }
+        #cook-mode-overlay.active { display: flex; }
+        .cook-header { padding: 1.5rem 2rem; background: var(--bg-color); border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .cook-title { font-size: 1.8rem; margin: 0; color: var(--text-main); }
+        .cook-close-btn { background: #eee; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: #333; display: flex; align-items: center; justify-content: center; }
+        .cook-body { padding: 2rem; display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        @media(max-width: 768px) { .cook-body { grid-template-columns: 1fr; gap: 2rem; } }
+        .cook-section h3 { font-size: 1.4rem; border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--primary-dark); }
+        .cook-list-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 1.2rem; font-size: 1.15rem; line-height: 1.6; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: 0.2s; }
+        .cook-list-item:hover { background: #f9f9f9; }
+        .cook-list-item input { transform: scale(1.5); margin-top: 6px; accent-color: var(--primary); }
+        .cook-list-item.done { text-decoration: line-through; color: #aaa; }
+
+        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 3000; justify-content: center; align-items: center; font-size: 2rem; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div id="loader"><i class="fas fa-spinner fa-spin"></i></div>
+
+    <nav>
+        <div class="nav-brand"><i class="fas fa-utensils"></i> Stocked</div>
+        <div class="nav-tabs" id="nav-actions" style="display:none;">
+            <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button onclick="switchTab('planning')">Planner</button>
+        </div>
+        <button id="logout-btn" class="logout-btn" onclick="handleLogout()" style="display:none;">Logout <i class="fas fa-sign-out-alt"></i></button>
+    </nav>
+
+    <div class="container" id="main-content" style="display:none;">
+        <section id="dashboard" class="page-section active">
+            <br>
+            <div class="filter-row">
+                <div class="filter-scroll" id="dashboard-filters"></div>
+                <button class="btn-manage-cats" onclick="openCatManager()"><i class="fas fa-pencil-alt"></i></button>
+            </div>
+            
+            <div id="recipe-grid" class="recipe-grid"></div>
+            <button class="fab" onclick="openModal()"><i class="fas fa-plus"></i></button>
+        </section>
+
+        <section id="planning" class="page-section">
+            <br>
+            <div class="header-row">
+                <h2>Weekly Plan</h2>
+                <button class="btn-sm" onclick="clearWeeklyPlan()"><i class="fas fa-trash-alt"></i> Clear Week</button>
+            </div>
+            <div class="planner-grid">
+                <div></div>
+                <div class="day-header">Mon</div><div class="day-header">Tue</div><div class="day-header">Wed</div><div class="day-header">Thu</div><div class="day-header">Fri</div><div class="day-header">Sat</div><div class="day-header">Sun</div>
+
+                <div class="meal-row-label"><i class="fas fa-coffee"></i>Break</div>
+                <div class="meal-slot" data-day="0" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+                <div class="meal-row-label"><i class="fas fa-hamburger"></i>Lunch</div>
+                <div class="meal-slot" data-day="0" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+                <div class="meal-row-label"><i class="fas fa-drumstick-bite"></i>Dinner</div>
+                <div class="meal-slot" data-day="0" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+                <div class="meal-row-label"><i class="fas fa-bread-slice"></i>Side</div>
+                <div class="meal-slot" data-day="0" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            </div>
+
+            <div class="tools-section">
+                <div class="tool-card">
+                    <div class="header-row"><h3><i class="fas fa-carrot"></i> Ingredients on Hand</h3></div>
+                    <div id="inventory-list-container" class="inventory-container"></div>
+                    <div class="inventory-add-row">
+                        <div class="custom-select-container" id="inv-cat-select">
+                            <select id="new-item-category">
+                                <option value="Produce">Produce</option><option value="Meat & Protein">Meat & Protein</option><option value="Dairy & Fridge">Dairy & Fridge</option><option value="Pantry & Grains">Pantry & Grains</option><option value="Spices & Seasonings">Spices</option>
+                            </select>
+                        </div>
+                        <input type="text" id="new-inventory-item" placeholder="Add item...">
+                        <button onclick="addInventoryItem()"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+
+                <div class="tool-card">
+                    <div class="header-row">
+                        <h3><i class="fas fa-shopping-basket"></i> Grocery List</h3>
+                        <button class="btn-sm" id="btn-copy-list" onclick="copyGroceryList()"><i class="far fa-copy"></i> Copy</button>
+                    </div>
+                    <div id="grocery-list-output" class="grocery-container"></div>
+                    <div class="inventory-add-row" style="border-top: 1px dashed #E6E2DA; padding-top: 1.5rem;">
+                        <div class="custom-select-container" id="groc-cat-select">
+                            <select id="manual-grocery-category">
+                                <option value="Produce">Produce</option><option value="Meat & Protein">Meat & Protein</option><option value="Dairy & Fridge">Dairy & Fridge</option><option value="Pantry & Grains">Pantry & Grains</option><option value="Spices & Seasonings">Spices</option><option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <input type="text" id="manual-grocery-item" placeholder="Add extra item...">
+                        <button onclick="addManualGroceryItem()"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 400px; text-align: center;">
+            <h2 class="confirm-title" style="margin-bottom: 1rem; color: var(--danger);">Are you sure?</h2>
+            <p id="confirm-message" style="color: var(--text-light); margin-bottom: 2rem; font-size: 1rem;"></p>
+            <div class="modal-actions" style="justify-content: center; gap: 1rem; margin-top: 0;">
+                <button class="secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button id="confirm-yes-btn" class="danger">Yes, I'm sure</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="modal-overlay open">
+        <div class="modal">
+            <h2 id="auth-title" class="auth-title">Welcome to Stocked</h2>
+            <p style="color:#777; margin-bottom:1.5rem;">Login to save your recipes and plans.</p>
+            <div id="auth-error"></div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="auth-email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="auth-password" placeholder="••••••••">
+                    <i class="fas fa-eye password-toggle" onclick="togglePasswordVisibility()"></i>
+                </div>
+            </div>
+            <button class="primary" style="width:100%; margin-top:1rem;" onclick="handleAuth()">Log In</button>
+            <div class="auth-toggle" onclick="toggleAuthMode()">Don't have an account? Sign Up</div>
+        </div>
+    </div>
+
+    <div id="cat-manager-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <h2>Manage Categories</h2>
+                <button class="modal-close-btn" onclick="closeCatManager()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="inventory-add-row" style="margin-bottom: 1rem;">
+                <input type="text" id="new-cat-name" placeholder="New Category Name (e.g. Thai)">
+                <button onclick="addNewCategory()"><i class="fas fa-plus"></i></button>
+            </div>
+            <p style="font-size:0.85rem; color:#999; margin-bottom:0.5rem;">Drag to reorder.</p>
+            <ul id="manage-cat-list" class="cat-list">
+                </ul>
+            <div class="modal-actions">
+                <button class="primary" onclick="closeCatManager()">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="recipe-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <h2 id="modal-title">Add Recipe</h2>
+                <button class="modal-close-btn" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="inp-title" placeholder="e.g. Grandma's Lasagna">
+            </div>
+            <div class="form-group">
+                <label>Cuisine Style</label>
+                <div class="custom-select-container" id="recipe-cat-select-container">
+                    <select id="inp-category"></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ingredients (one per line)</label>
+                <textarea id="inp-ingredients" rows="4" placeholder="2 Eggs&#10;1 cup Flour"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Instructions</label>
+                <textarea id="inp-instructions" rows="6" placeholder="1. Mix ingredients...&#10;2. Bake at 350..."></textarea>
+            </div>
+            <input type="hidden" id="inp-id">
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeModal()">Cancel</button>
+                <button class="primary" onclick="saveRecipe()">Save Recipe</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="selector-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <h2>Select a Meal</h2>
+                <button class="modal-close-btn" onclick="closeSelectorModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="filter-scroll" id="picker-filters"></div>
+            <ul id="picker-list" class="recipe-picker-list"></ul>
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeSelectorModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="cook-mode-overlay">
+        <div class="cook-header">
+            <h2 id="cook-title" class="cook-title">Recipe Title</h2>
+            <button class="cook-close-btn" onclick="closeCookMode()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cook-body">
+            <div class="cook-section"><h3>Ingredients</h3><div id="cook-ingredients"></div></div>
+            <div class="cook-section"><h3>Instructions</h3><div id="cook-instructions"></div></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyB5tfvrxjwVVp3fdWDP1p_EiqLpQc-yxT8",
+          authDomain: "stocked-website.firebaseapp.com",
+          projectId: "stocked-website",
+          storageBucket: "stocked-website.firebasestorage.app",
+          messagingSenderId: "532018821574",
+          appId: "1:532018821574:web:2dd176a57164e0a8a3dac7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let isSignup = false; 
+        
+        let recipes = [];
+        let mealPlan = {};
+        let inventory = [];
+        let manualGrocery = [];
+        let appCategories = ["Italian", "Mexican", "Asian", "American", "Healthy", "Breakfast", "Dessert", "Other"];
+
+        const INVENTORY_CATEGORIES = ["Produce", "Meat & Protein", "Dairy & Fridge", "Pantry & Grains", "Spices & Seasonings", "Other"];
+        const CATEGORY_KEYWORDS = {
+            "Produce": ["onion", "garlic", "lemon", "lime", "tomato", "potato", "carrot", "lettuce", "spinach", "pepper", "fruit", "veg", "avocado", "banana", "herb", "cilantro", "parsley", "basil", "chive"],
+            "Meat & Protein": ["chicken", "beef", "pork", "steak", "fish", "salmon", "tuna", "shrimp", "tofu", "meat", "bacon", "sausage", "turkey", "ham"],
+            "Dairy & Fridge": ["milk", "cheese", "butter", "egg", "cream", "yogurt", "cheddar", "mozzarella", "parmesan"],
+            "Pantry & Grains": ["rice", "pasta", "noodle", "bread", "flour", "sugar", "cereal", "oat", "can", "bean", "lentil", "sauce", "jar", "honey", "nut"],
+            "Spices & Seasonings": ["salt", "pepper", "oil", "vinegar", "spice", "paprika", "cumin", "soy", "seasoning"]
+        };
+
+        let currentDashboardFilter = "All";
+        let currentPickerFilter = "All";
+        let activeSlot = { day: null, type: null };
+        let wakeLock = null;
+        let confirmCallback = null;
+
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
+            const h = Math.abs(hash % 360);
+            return `hsl(${h}, 65%, 60%)`; 
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-modal').classList.remove('open');
+                document.getElementById('main-content').style.display = 'block';
+                document.getElementById('nav-actions').style.display = 'flex';
+                document.getElementById('logout-btn').style.display = 'block';
+                await loadUserData();
+                // Initialize custom selects after data load
+                initCustomSelects();
+            } else {
+                currentUser = null;
+                document.getElementById('auth-modal').classList.add('open');
+                document.getElementById('main-content').style.display = 'none';
+                document.getElementById('nav-actions').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'none';
+            }
+        });
+
+        // --- CUSTOM SELECT LOGIC ---
+        function initCustomSelects() {
+            setupCustomSelect('inv-cat-select');
+            setupCustomSelect('groc-cat-select');
+            // Recipe one will be handled on openModal
+        }
+
+        function setupCustomSelect(containerId) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            
+            const select = container.querySelector('select');
+            
+            // Remove existing custom structure if any (for re-renders)
+            const existingSelected = container.querySelector('.select-selected');
+            const existingItems = container.querySelector('.select-items');
+            if(existingSelected) existingSelected.remove();
+            if(existingItems) existingItems.remove();
+
+            // Create Selected Item DIV
+            const selectedDiv = document.createElement("div");
+            selectedDiv.setAttribute("class", "select-selected");
+            selectedDiv.innerHTML = select.options[select.selectedIndex].innerHTML;
+            container.appendChild(selectedDiv);
+
+            // Create Options List DIV
+            const optionsDiv = document.createElement("div");
+            optionsDiv.setAttribute("class", "select-items select-hide");
+
+            for (let i = 0; i < select.length; i++) {
+                const optionDiv = document.createElement("div");
+                optionDiv.innerHTML = select.options[i].innerHTML;
+                optionDiv.addEventListener("click", function(e) {
+                    select.selectedIndex = i;
+                    selectedDiv.innerHTML = this.innerHTML;
+                    
+                    const sameAsSelected = this.parentNode.querySelectorAll(".same-as-selected");
+                    sameAsSelected.forEach(el => el.classList.remove("same-as-selected"));
+                    this.setAttribute("class", "same-as-selected");
+                    
+                    selectedDiv.click(); // Close dropdown
+                    // Trigger change event manually if needed
+                    select.dispatchEvent(new Event('change'));
+                });
+                optionsDiv.appendChild(optionDiv);
+            }
+            container.appendChild(optionsDiv);
+
+            selectedDiv.addEventListener("click", function(e) {
+                e.stopPropagation();
+                closeAllSelect(this);
+                this.nextSibling.classList.toggle("select-hide");
+                this.classList.toggle("select-arrow-active");
+            });
+        }
+
+        function closeAllSelect(elmnt) {
+            const items = document.getElementsByClassName("select-items");
+            const selected = document.getElementsByClassName("select-selected");
+            const arrNo = [];
+            for (let i = 0; i < selected.length; i++) {
+                if (elmnt == selected[i]) {
+                    arrNo.push(i)
+                } else {
+                    selected[i].classList.remove("select-arrow-active");
+                }
+            }
+            for (let i = 0; i < items.length; i++) {
+                if (arrNo.indexOf(i)) {
+                    items[i].classList.add("select-hide");
+                }
+            }
+        }
+        document.addEventListener("click", closeAllSelect);
+
+        // -------------------------
+
+        window.toggleAuthMode = () => {
+            isSignup = !isSignup;
+            const title = document.getElementById('auth-title');
+            const btn = document.querySelector('#auth-modal button');
+            const toggle = document.querySelector('.auth-toggle');
+            const error = document.getElementById('auth-error');
+            error.style.display = 'none';
+            if(isSignup) { title.innerText = "Create Account"; btn.innerText = "Sign Up"; toggle.innerText = "Already have an account? Log In"; } 
+            else { title.innerText = "Welcome to Stocked"; btn.innerText = "Log In"; toggle.innerText = "Don't have an account? Sign Up"; }
+        };
+
+        window.handleAuth = async () => {
+            const email = document.getElementById('auth-email').value;
+            const pass = document.getElementById('auth-password').value;
+            const errorEl = document.getElementById('auth-error');
+            try {
+                if(isSignup) {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                    await initNewUserDB();
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pass);
+                }
+            } catch (error) {
+                errorEl.innerText = error.message;
+                errorEl.style.display = 'block';
+            }
+        };
+
+        window.handleLogout = () => signOut(auth);
+        window.togglePasswordVisibility = () => {
+            const input = document.getElementById('auth-password');
+            const icon = document.querySelector('.password-toggle');
+            if (input.type === "password") { input.type = "text"; icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); } 
+            else { input.type = "password"; icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+        };
+
+        async function initNewUserDB() {
+            if(!currentUser) return;
+            const defaultInv = [{ name: "Salt", category: "Spices & Seasonings", checked: true }, { name: "Garlic", category: "Produce", checked: true }];
+            await setDoc(doc(db, "users", currentUser.uid, "data", "inventory"), { items: defaultInv });
+            await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: {} });
+            await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: [] });
+            await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
+            
+            await addDoc(collection(db, "users", currentUser.uid, "recipes"), {
+                title: 'Avocado Toast', category: 'Breakfast', ingredients: 'Bread\nAvocado', instructions: 'Toast bread.', favorite: true, id: Date.now()
+            });
+        }
+
+        async function loadUserData() {
+            document.getElementById('loader').style.display = 'flex';
+            
+            recipes = [];
+            const q = query(collection(db, "users", currentUser.uid, "recipes"));
+            const querySnapshot = await getDocs(q);
+            querySnapshot.forEach((doc) => { recipes.push({ ...doc.data(), id: doc.id }); });
+
+            const invSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "inventory"));
+            inventory = invSnap.exists() ? invSnap.data().items : [];
+
+            const mpSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"));
+            mealPlan = mpSnap.exists() ? mpSnap.data().plan : {};
+
+            const grocSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "grocery"));
+            manualGrocery = grocSnap.exists() ? grocSnap.data().items : [];
+
+            const setSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "settings"));
+            if(setSnap.exists() && setSnap.data().categories) {
+                appCategories = setSnap.data().categories;
+                appCategories = [...new Set(appCategories)]; 
+            } else {
+                await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
+            }
+
+            renderDashboardFilters();
+            renderRecipes();
+            renderMealPlan();
+            renderInventory();
+            generateGroceryList();
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        async function saveSettingsToCloud() {
+            await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
+        }
+        async function saveInventoryToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "inventory"), { items: inventory }); }
+        async function saveMealPlanToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: mealPlan }); }
+        async function saveGroceryToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: manualGrocery }); }
+
+        window.openConfirmModal = (message, callback) => {
+            document.getElementById('confirm-message').innerText = message;
+            confirmCallback = callback;
+            document.getElementById('confirm-modal').classList.add('open');
+        };
+        window.closeConfirmModal = () => { document.getElementById('confirm-modal').classList.remove('open'); confirmCallback = null; };
+        document.getElementById('confirm-yes-btn').onclick = () => { if (confirmCallback) confirmCallback(); window.closeConfirmModal(); };
+
+        window.switchTab = (tabId) => {
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            const index = tabId === 'dashboard' ? 0 : 1;
+            document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
+        };
+
+        window.openCatManager = () => {
+            renderCatManagerList();
+            document.getElementById('cat-manager-modal').classList.add('open');
+        };
+        window.closeCatManager = () => document.getElementById('cat-manager-modal').classList.remove('open');
+
+        function renderCatManagerList() {
+            const list = document.getElementById('manage-cat-list');
+            list.innerHTML = '';
+            appCategories.forEach((cat, index) => {
+                const li = document.createElement('li');
+                li.className = 'cat-item';
+                li.draggable = true;
+                li.dataset.index = index;
+                li.innerHTML = `
+                    <div style="display:flex; align-items:center;">
+                        <span class="cat-grip"><i class="fas fa-grip-lines"></i></span>
+                        <span class="cat-name">${cat}</span>
+                    </div>
+                    <i class="fas fa-trash-alt cat-delete" onclick="deleteCategory(${index})"></i>
+                `;
+                li.addEventListener('dragstart', handleDragStart);
+                li.addEventListener('dragover', handleDragOver);
+                li.addEventListener('drop', handleDrop);
+                li.addEventListener('dragenter', handleDragEnter);
+                li.addEventListener('dragleave', handleDragLeave);
+                list.appendChild(li);
+            });
+        }
+
+        window.addNewCategory = async () => {
+            const input = document.getElementById('new-cat-name');
+            const val = input.value.trim();
+            if(!val) return;
+            const clean = val.charAt(0).toUpperCase() + val.slice(1);
+            if(!appCategories.includes(clean)) {
+                appCategories.push(clean);
+                await saveSettingsToCloud();
+                renderCatManagerList();
+                renderDashboardFilters();
+            }
+            input.value = '';
+        };
+
+        // V.30 Fixed Delete with Custom Modal
+        window.deleteCategory = (index) => {
+            window.openConfirmModal("Remove this category?", async () => {
+                appCategories.splice(index, 1);
+                await saveSettingsToCloud();
+                renderCatManagerList();
+                renderDashboardFilters();
+            });
+        };
+
+        let dragSrcEl = null;
+        function handleDragStart(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            this.classList.add('dragging');
+        }
+        function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
+        function handleDragEnter(e) { this.classList.add('over'); }
+        function handleDragLeave(e) { this.classList.remove('over'); }
+        function handleDrop(e) {
+            if (e.stopPropagation) e.stopPropagation();
+            if (dragSrcEl !== this) {
+                const oldIdx = parseInt(dragSrcEl.dataset.index);
+                const newIdx = parseInt(this.dataset.index);
+                const item = appCategories.splice(oldIdx, 1)[0];
+                appCategories.splice(newIdx, 0, item);
+                saveSettingsToCloud();
+                renderCatManagerList();
+                renderDashboardFilters();
+            }
+            return false;
+        }
+
+        window.saveRecipe = async () => {
+            const id = document.getElementById('inp-id').value;
+            const data = {
+                title: document.getElementById('inp-title').value,
+                category: document.getElementById('inp-category').value,
+                ingredients: document.getElementById('inp-ingredients').value,
+                instructions: document.getElementById('inp-instructions').value,
+            };
+            if(!data.title) return alert("Title required");
+            document.getElementById('loader').style.display = 'flex';
+            if(id) {
+                const recipeRef = doc(db, "users", currentUser.uid, "recipes", id);
+                await updateDoc(recipeRef, data);
+                const idx = recipes.findIndex(r => r.id === id);
+                if(idx > -1) recipes[idx] = { ...recipes[idx], ...data };
+            } else {
+                data.favorite = false;
+                const docRef = await addDoc(collection(db, "users", currentUser.uid, "recipes"), data);
+                recipes.push({ ...data, id: docRef.id });
+            }
+            document.getElementById('loader').style.display = 'none';
+            window.closeModal();
+            renderRecipes();
+            renderMealPlan(); 
+            generateGroceryList();
+        };
+
+        window.deleteRecipe = (id) => {
+            window.openConfirmModal("Permanently delete this recipe?", async () => {
+                document.getElementById('loader').style.display = 'flex';
+                await deleteDoc(doc(db, "users", currentUser.uid, "recipes", id));
+                recipes = recipes.filter(r => r.id !== id);
+                let planChanged = false;
+                Object.keys(mealPlan).forEach(key => {
+                    if(mealPlan[key].recipeId === id) { delete mealPlan[key]; planChanged = true; }
+                });
+                if(planChanged) await saveMealPlanToCloud();
+                document.getElementById('loader').style.display = 'none';
+                renderRecipes();
+                renderMealPlan();
+                generateGroceryList();
+            });
+        };
+
+        window.toggleFav = async (id) => {
+            const r = recipes.find(x => x.id === id);
+            if(r) {
+                r.favorite = !r.favorite;
+                renderRecipes(); 
+                const recipeRef = doc(db, "users", currentUser.uid, "recipes", id);
+                await updateDoc(recipeRef, { favorite: r.favorite });
+            }
+        };
+
+        window.openModal = (editId = null) => {
+            document.getElementById('recipe-modal').classList.add('open');
+            const select = document.getElementById('inp-category');
+            select.innerHTML = '';
+            appCategories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                select.appendChild(opt);
+            });
+
+            if (editId) {
+                const r = recipes.find(x => x.id === editId);
+                document.getElementById('modal-title').innerText = "Edit Recipe";
+                document.getElementById('inp-id').value = r.id;
+                document.getElementById('inp-title').value = r.title;
+                select.value = r.category || appCategories[0];
+                document.getElementById('inp-ingredients').value = r.ingredients;
+                document.getElementById('inp-instructions').value = r.instructions;
+            } else {
+                document.getElementById('modal-title').innerText = "New Recipe";
+                document.getElementById('inp-id').value = '';
+                document.getElementById('inp-title').value = '';
+                select.value = appCategories[0];
+                document.getElementById('inp-ingredients').value = '';
+                document.getElementById('inp-instructions').value = '';
+            }
+            
+            // Re-initialize custom select for the modal
+            setupCustomSelect('recipe-cat-select-container');
+        };
+        
+        window.closeModal = () => document.getElementById('recipe-modal').classList.remove('open');
+        window.editRecipe = (id) => window.openModal(id);
+
+        function renderDashboardFilters() {
+            const container = document.getElementById('dashboard-filters');
+            container.innerHTML = '';
+            const displayCats = ["All", ...appCategories];
+            displayCats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `filter-pill ${currentDashboardFilter === cat ? 'active' : ''}`;
+                btn.innerText = cat;
+                btn.onclick = () => { currentDashboardFilter = cat; renderDashboardFilters(); renderRecipes(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderRecipes() {
+            const grid = document.getElementById('recipe-grid');
+            grid.innerHTML = '';
+            recipes.sort((a, b) => (a.favorite === b.favorite) ? 0 : a.favorite ? -1 : 1);
+            
+            const filtered = currentDashboardFilter === "All" ? recipes : recipes.filter(r => r.category === currentDashboardFilter);
+            
+            if (recipes.length === 0) {
+                 grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color:var(--text-light);">
+                    <div style="font-size: 1.2rem; font-weight: 500;">Add a recipe to get started!</div>
+                 </div>`;
+                 return;
+            }
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; color:var(--text-light);">No recipes found for "${currentDashboardFilter}".</p>`;
+                return;
+            }
+
+            filtered.forEach(r => {
+                if(!r.category) r.category = 'Other';
+                const card = document.createElement('div');
+                card.className = 'recipe-card draggable';
+                card.draggable = true;
+                card.ondragstart = (e) => drag(e, r.id);
+                const badgeColor = stringToColor(r.category);
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div style="flex-grow:1;">
+                            <div class="cat-badge" style="background-color: ${badgeColor};">${r.category}</div>
+                            <div class="recipe-title">${r.title}</div>
+                        </div>
+                        <button class="fav-btn ${r.favorite ? 'active' : ''}" onclick="toggleFav('${r.id}')"><i class="${r.favorite ? 'fas' : 'far'} fa-star"></i></button>
+                    </div>
+                    <div class="clickable-area" onclick="toggleExpand(this)">
+                        <div class="recipe-details"><h4>Ingredients</h4><ul class="ingredient-list">${r.ingredients.split('\n').map(i=>`<li>${i}</li>`).join('')}</ul></div>
+                        <div class="recipe-details" style="flex-grow: 1;"><h4>Instructions</h4><div class="instruction-preview">${r.instructions}</div></div>
+                    </div>
+                    <div class="card-actions">
+                         <div style="display:flex; align-items:center; gap:10px;">
+                             <button class="btn-cook" onclick="openCookMode('${r.id}')"><i class="fas fa-fire"></i> Start Cooking</button>
+                             <span class="expand-hint"><i class="fas fa-chevron-down"></i> Expand</span>
+                         </div>
+                         <div class="action-buttons">
+                            <button class="btn-icon" onclick="editRecipe('${r.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-icon delete" onclick="deleteRecipe('${r.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        window.toggleExpand = (el) => {
+            const card = el.closest('.recipe-card');
+            const preview = card.querySelector('.instruction-preview');
+            const isExpanded = card.classList.contains('expanded');
+            if (isExpanded) {
+                preview.style.maxHeight = preview.scrollHeight + "px";
+                preview.offsetHeight; 
+                card.classList.remove('expanded');
+                preview.style.maxHeight = null;
+            } else {
+                card.classList.add('expanded');
+                preview.style.maxHeight = preview.scrollHeight + "px";
+            }
+        };
+
+        window.drag = (ev, id) => { ev.dataTransfer.setData("recipeId", id); };
+        window.allowDrop = (ev) => { ev.preventDefault(); ev.target.closest('.meal-slot').classList.add('drag-over'); };
+        window.drop = (ev) => {
+            ev.preventDefault();
+            const slot = ev.target.closest('.meal-slot');
+            slot.classList.remove('drag-over');
+            const id = ev.dataTransfer.getData("recipeId");
+            if(!id) return;
+            updateMealSlot(slot.dataset.day, slot.dataset.type, id);
+        };
+
+        window.openMealSelector = (day, type) => {
+            activeSlot = { day, type };
+            currentPickerFilter = "All";
+            renderPickerFilters();
+            renderPickerList();
+            document.getElementById('selector-modal').classList.add('open');
+        };
+        window.closeSelectorModal = () => document.getElementById('selector-modal').classList.remove('open');
+
+        function renderPickerFilters() {
+            const container = document.getElementById('picker-filters');
+            container.innerHTML = '';
+            const displayCats = ["All", ...appCategories];
+            displayCats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `filter-pill ${currentPickerFilter === cat ? 'active' : ''}`;
+                btn.innerText = cat;
+                btn.onclick = () => { currentPickerFilter = cat; renderPickerFilters(); renderPickerList(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderPickerList() {
+            const list = document.getElementById('picker-list');
+            list.innerHTML = '';
+            if(recipes.length === 0) { list.innerHTML = '<li style="padding:1rem; color:#777;">Add recipes to dashboard first.</li>'; return; }
+            const filtered = currentPickerFilter === "All" ? recipes : recipes.filter(r => r.category === currentPickerFilter);
+            if(filtered.length === 0) { list.innerHTML = '<li style="padding:1rem; color:#777;">No matching recipes found.</li>'; return; }
+            filtered.forEach(r => {
+               const li = document.createElement('li');
+               li.className = 'picker-item';
+               li.innerHTML = `<span><strong>${r.title}</strong></span><i class="fas fa-plus"></i>`;
+               li.onclick = () => { updateMealSlot(activeSlot.day, activeSlot.type, r.id); window.closeSelectorModal(); };
+               list.appendChild(li);
+            });
+        }
+
+        async function updateMealSlot(day, type, recipeId) {
+            const key = `${day}-${type}`;
+            mealPlan[key] = { recipeId, day, type };
+            renderMealPlan();
+            generateGroceryList();
+            await saveMealPlanToCloud();
+        }
+
+        window.removeFromPlan = async (e, key) => { e.stopPropagation(); delete mealPlan[key]; renderMealPlan(); generateGroceryList(); await saveMealPlanToCloud(); };
+        window.clearWeeklyPlan = () => {
+            window.openConfirmModal("Clear the entire week's plan?", async () => {
+                document.getElementById('loader').style.display = 'flex';
+                mealPlan = {};
+                await saveMealPlanToCloud();
+                renderMealPlan();
+                generateGroceryList();
+                document.getElementById('loader').style.display = 'none';
+            });
+        };
+
+        function renderMealPlan() {
+            document.querySelectorAll('.meal-slot').forEach(slot => {
+                slot.innerHTML = '<span class="slot-placeholder"><i class="fas fa-plus"></i></span>';
+                slot.onclick = () => window.openMealSelector(slot.dataset.day, slot.dataset.type);
+            });
+            Object.keys(mealPlan).forEach(key => {
+                const plan = mealPlan[key];
+                const recipe = recipes.find(r => r.id === plan.recipeId);
+                const slot = document.querySelector(`.meal-slot[data-day="${plan.day}"][data-type="${plan.type}"]`);
+                if (recipe && slot) {
+                    slot.onclick = null; 
+                    const color = stringToColor(recipe.category);
+                    slot.innerHTML = `
+                        <div class="planned-meal" style="border-left-color: ${color}">
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${recipe.title}</span>
+                            <i class="fas fa-times remove-meal" onclick="removeFromPlan(event, '${key}')"></i>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function renderInventory() {
+            const container = document.getElementById('inventory-list-container');
+            container.innerHTML = '';
+            INVENTORY_CATEGORIES.forEach(cat => {
+                const catItems = inventory.filter(i => i.category === cat).sort((a,b)=>a.name.localeCompare(b.name));
+                if(catItems.length > 0) {
+                    container.innerHTML += `<div class="inv-category-header">${cat}</div>`;
+                    catItems.forEach(item => {
+                        const idx = inventory.indexOf(item);
+                        container.innerHTML += `
+                            <div class="inventory-item-row">
+                                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleInventory(${idx})">
+                                <label>${item.name}</label>
+                                <i class="fas fa-times delete-item" onclick="deleteInventoryItem(${idx})"></i>
+                            </div>
+                        `;
+                    });
+                }
+            });
+        }
+
+        window.toggleInventory = async (idx) => { inventory[idx].checked = !inventory[idx].checked; renderInventory(); generateGroceryList(); await saveInventoryToCloud(); };
+        window.deleteInventoryItem = async (idx) => { inventory.splice(idx, 1); renderInventory(); generateGroceryList(); await saveInventoryToCloud(); };
+        window.addInventoryItem = async () => {
+            const name = document.getElementById('new-inventory-item').value.trim();
+            const cat = document.getElementById('new-item-category').value;
+            if(!name) return;
+            const clean = name.charAt(0).toUpperCase() + name.slice(1);
+            if(inventory.find(i=>i.name.toLowerCase()===clean.toLowerCase())) return alert("Item exists");
+            inventory.push({ name: clean, category: cat, checked: true });
+            document.getElementById('new-inventory-item').value = '';
+            renderInventory(); generateGroceryList(); await saveInventoryToCloud();
+        };
+
+        function detectCategory(name) {
+            name = name.toLowerCase();
+            for (const [cat, keywords] of Object.entries(CATEGORY_KEYWORDS)) { if (keywords.some(k => name.includes(k))) return cat; }
+            return "Other";
+        }
+
+        window.addManualGroceryItem = async () => {
+            const name = document.getElementById('manual-grocery-item').value.trim();
+            const cat = document.getElementById('manual-grocery-category').value;
+            if(!name) return;
+            const clean = name.charAt(0).toUpperCase() + name.slice(1);
+            manualGrocery.push({ name: clean, category: cat, isManual: true });
+            document.getElementById('manual-grocery-item').value = '';
+            generateGroceryList(); await saveGroceryToCloud();
+        };
+
+        window.removeManualItem = async (idx) => { manualGrocery.splice(idx, 1); generateGroceryList(); await saveGroceryToCloud(); };
+
+        function generateGroceryList() {
+            let needed = [];
+            Object.values(mealPlan).forEach(p => {
+                const r = recipes.find(x => x.id === p.recipeId);
+                if(r) r.ingredients.split('\n').forEach(i => { let clean = i.replace(/^[0-9\/\.\s]+(cup|tbsp|tsp|g|oz|lb|ml|l)?\s+/i, '').trim().toLowerCase(); if(clean) needed.push(clean); });
+            });
+            const fridge = inventory.filter(i=>i.checked).map(i=>i.name.toLowerCase());
+            const finalNeeded = needed.filter(n => !fridge.includes(n));
+            const uniqueNeeded = [...new Set(finalNeeded)].map(n => ({ name: n.charAt(0).toUpperCase() + n.slice(1), category: detectCategory(n), isManual: false }));
+            const all = [...uniqueNeeded, ...manualGrocery];
+            const listEl = document.getElementById('grocery-list-output');
+            listEl.innerHTML = '';
+            if(all.length === 0) { listEl.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-light)">All stocked up!</div>'; return; }
+            INVENTORY_CATEGORIES.forEach(cat => {
+                const items = all.filter(i => i.category === cat).sort((a,b)=>a.name.localeCompare(b.name));
+                if(items.length > 0) {
+                    listEl.innerHTML += `<div class="inv-category-header">${cat}</div>`;
+                    items.forEach(item => {
+                        let del = '';
+                        if(item.isManual) {
+                            const idx = manualGrocery.indexOf(item);
+                            del = `<i class="fas fa-times delete-manual" onclick="removeManualItem(${idx})"></i>`;
+                        }
+                        listEl.innerHTML += `<div class="grocery-item ${item.isManual?'manual-item':''}"><input type="checkbox"> <label>${item.name}</label> ${del}</div>`;
+                    });
+                }
+            });
+        }
+
+        window.copyGroceryList = () => {
+            const listContainer = document.getElementById('grocery-list-output');
+            const items = listContainer.querySelectorAll('.inv-category-header, .grocery-item label');
+            let copyText = "GROCERY LIST:\n";
+            items.forEach(el => { if(el.classList.contains('inv-category-header')) { copyText += `\n[${el.innerText}]\n`; } else { copyText += `- ${el.innerText}\n`; } });
+            navigator.clipboard.writeText(copyText).then(() => {
+                const btn = document.getElementById('btn-copy-list');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = `<i class="fas fa-check"></i> Copied!`;
+                setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+            });
+        };
+
+        window.openCookMode = (id) => {
+            const r = recipes.find(x => x.id == id);
+            if (!r) return;
+            document.getElementById('cook-title').innerText = r.title;
+            const ingContainer = document.getElementById('cook-ingredients');
+            ingContainer.innerHTML = '';
+            r.ingredients.split('\n').filter(i=>i.trim()).forEach(ing => {
+                ingContainer.innerHTML += `<div class="cook-list-item" onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked"><input type="checkbox"><span>${ing}</span></div>`;
+            });
+            const instContainer = document.getElementById('cook-instructions');
+            instContainer.innerHTML = '';
+            r.instructions.split('\n').filter(i=>i.trim()).forEach(inst => {
+                instContainer.innerHTML += `<div class="cook-list-item" onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked"><input type="checkbox"><span>${inst}</span></div>`;
+            });
+            document.getElementById('cook-mode-overlay').classList.add('active');
+            try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => wakeLock = w); } catch(e){}
+        };
+        window.closeCookMode = () => {
+            document.getElementById('cook-mode-overlay').classList.remove('active');
+            if (wakeLock) wakeLock.release().then(()=>wakeLock=null);
+        };
+
+    </script>
+</body>
+</html>
