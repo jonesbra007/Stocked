@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stocked | Meal Planner V.36</title>
+    <title>Stocked | Meal Planner V.37</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1151,19 +1151,72 @@
 
         window.removeManualItem = async (idx) => { manualGrocery.splice(idx, 1); generateGroceryList(); await saveGroceryToCloud(); };
 
+        // V.37 New Ingredient Parser
+        function parseIngredient(text) {
+            text = text.toLowerCase().trim();
+            
+            // 1. Remove Quantity (numbers, fractions, decimals, ranges)
+            text = text.replace(/^[\d\s\/\.\u00BC-\u00BE\u2150-\u215E\-]+/, '').trim();
+
+            // 2. Remove Units (long list)
+            const units = [
+                "cups", "cup", "c",
+                "tablespoons", "tablespoon", "tbsp", "tbs", "t",
+                "teaspoons", "teaspoon", "tsp",
+                "ounces", "ounce", "oz",
+                "pounds", "pound", "lbs", "lb",
+                "grams", "gram", "g",
+                "kilograms", "kilogram", "kg",
+                "milliliters", "milliliter", "ml",
+                "liters", "liter", "l",
+                "pints", "pint", "pt",
+                "quarts", "quart", "qt",
+                "gallons", "gallon", "gal",
+                "dash", "pinch", "handful", "splash",
+                "slices", "slice",
+                "cans", "can",
+                "jars", "jar",
+                "packages", "package", "pkg",
+                "sticks", "stick",
+                "cloves", "clove",
+                "bunches", "bunch",
+                "heads", "head",
+                "stalks", "stalk"
+            ];
+            
+            const unitPattern = units.sort((a,b) => b.length - a.length).join('|');
+            const regex = new RegExp(`^(${unitPattern})\\b\\s*(of\\s+)?`, 'i');
+            
+            text = text.replace(regex, '').trim();
+            
+            return text;
+        }
+
         function generateGroceryList() {
             let needed = [];
             Object.values(mealPlan).forEach(p => {
                 const r = recipes.find(x => x.id === p.recipeId);
-                if(r) r.ingredients.split('\n').forEach(i => { let clean = i.replace(/^[0-9\/\.\s]+(cup|tbsp|tsp|g|oz|lb|ml|l)?\s+/i, '').trim().toLowerCase(); if(clean) needed.push(clean); });
+                if(r) r.ingredients.split('\n').forEach(i => {
+                    // V.37 Use new parser
+                    let clean = parseIngredient(i);
+                    if(clean) needed.push(clean);
+                });
             });
+
             const fridge = inventory.filter(i=>i.checked).map(i=>i.name.toLowerCase());
             const finalNeeded = needed.filter(n => !fridge.includes(n));
-            const uniqueNeeded = [...new Set(finalNeeded)].map(n => ({ name: n.charAt(0).toUpperCase() + n.slice(1), category: detectCategory(n), isManual: false }));
+            const uniqueNeeded = [...new Set(finalNeeded)].map(n => ({
+                name: n.charAt(0).toUpperCase() + n.slice(1),
+                category: detectCategory(n),
+                isManual: false
+            }));
+
             const all = [...uniqueNeeded, ...manualGrocery];
             const listEl = document.getElementById('grocery-list-output');
             listEl.innerHTML = '';
+
             if(all.length === 0) { listEl.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-light)">All stocked up!</div>'; return; }
+
             INVENTORY_CATEGORIES.forEach(cat => {
                 const items = all.filter(i => i.category === cat).sort((a,b)=>a.name.localeCompare(b.name));
                 if(items.length > 0) {
@@ -1174,7 +1227,11 @@
                             const idx = manualGrocery.indexOf(item);
                             del = `<i class="fas fa-times delete-manual" onclick="removeManualItem(${idx})"></i>`;
                         }
-                        listEl.innerHTML += `<div class="grocery-item ${item.isManual?'manual-item':''}"><input type="checkbox"> <label>${item.name}</label> ${del}</div>`;
+                        listEl.innerHTML += `
+                            <div class="grocery-item ${item.isManual?'manual-item':''}">
+                                <input type="checkbox"> <label>${item.name}</label> ${del}
+                            </div>
+                        `;
                     });
                 }
             });
@@ -1184,7 +1241,13 @@
             const listContainer = document.getElementById('grocery-list-output');
             const items = listContainer.querySelectorAll('.inv-category-header, .grocery-item label');
             let copyText = "GROCERY LIST:\n";
-            items.forEach(el => { if(el.classList.contains('inv-category-header')) { copyText += `\n[${el.innerText}]\n`; } else { copyText += `- ${el.innerText}\n`; } });
+            items.forEach(el => {
+                if(el.classList.contains('inv-category-header')) {
+                    copyText += `\n[${el.innerText}]\n`;
+                } else {
+                    copyText += `- ${el.innerText}\n`;
+                }
+            });
             navigator.clipboard.writeText(copyText).then(() => {
                 const btn = document.getElementById('btn-copy-list');
                 const originalHtml = btn.innerHTML;
