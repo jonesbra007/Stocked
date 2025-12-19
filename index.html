@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stocked | Meal Planner V.40</title>
+    <title>Stocked | Meal Planner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -253,17 +253,17 @@
         .fab { position: fixed; bottom: 2.5rem; right: 2.5rem; background: var(--primary); color: white; width: 64px; height: 64px; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 10px 25px rgba(92, 141, 137, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 200; transition: all 0.3s ease; }
         .fab:hover { transform: scale(1.1) rotate(90deg); background: var(--primary-dark); }
 
-        /* V.40 Substitutions Styles */
+        /* Substitutions Styles */
         .sub-list { list-style: none; margin-top: 1rem; }
         .sub-list li {
-            display: flex; align-items: center; justify-content: space-between;
+            display: flex; align-items: flex-start; justify-content: space-between;
             padding: 0.8rem 0; border-bottom: 1px solid var(--border);
-            color: var(--text-main); font-size: 0.95rem;
+            color: var(--text-main); font-size: 0.9rem; line-height: 1.4;
         }
         .sub-list li:last-child { border-bottom: none; }
-        .sub-original { font-weight: 600; color: var(--primary); }
-        .sub-arrow { color: var(--accent); margin: 0 12px; font-size: 0.9rem; }
-        .sub-replacement { color: var(--text-main); text-align: right; flex-grow: 1; }
+        .sub-original { font-weight: 600; color: var(--primary); width: 35%; flex-shrink: 0; }
+        .sub-arrow { color: var(--accent); margin: 0 10px; font-size: 0.85rem; padding-top: 3px; }
+        .sub-replacement { color: var(--text-main); flex-grow: 1; }
 
         /* --- Modals --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
@@ -429,37 +429,43 @@
             </div>
             <div class="tools-section">
                 <div class="tool-card">
-                    <h3><i class="fas fa-cookie-bite"></i> Baking Essentials</h3>
+                    <h3><i class="fas fa-cookie-bite"></i> Baking & Pantry</h3>
                     <ul class="sub-list">
-                        <li><span class="sub-original">1 tsp Baking Powder</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/4 tsp Baking Soda + 1/2 tsp Cream of Tartar</span></li>
-                        <li><span class="sub-original">1 cup Cake Flour</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3/4 cup All-Purpose Flour + 2 tbsp Cornstarch</span></li>
-                        <li><span class="sub-original">1 oz Unsweetened Chocolate</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3 tbsp Cocoa Powder + 1 tbsp Oil/Butter</span></li>
-                        <li><span class="sub-original">1 cup Brown Sugar</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup White Sugar + 1 tbsp Molasses</span></li>
+                        <li><span class="sub-original">1 tsp Baking Powder (Double Acting)</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/4 tsp Baking Soda + 1/2 tsp Cream of Tartar</span></li>
+                        <li><span class="sub-original">1 oz Chocolate</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3 tbsp Cocoa + 1 tbsp Shortening</span></li>
+                        <li><span class="sub-original">1 tbsp Corn Starch (to thicken)</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">2 tbsp Flour</span></li>
+                        <li><span class="sub-original">1 cup Cake Flour</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">7/8 cup All Purpose Flour + 2 tbsp Cornstarch</span></li>
+                        <li><span class="sub-original">1 cup Self-Rising Flour</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Flour + 1 1/2 tsp Baking Powder + 1/2 tsp Salt</span></li>
+                        <li><span class="sub-original">1 cup Sugar, Brown</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3/4 cup Granulated Sugar + 1/4 cup Molasses</span></li>
+                        <li><span class="sub-original">1 cup Sugar, Powdered</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Granulated Sugar (blend about 1 minute)</span></li>
+                        <li><span class="sub-original">1 cup Honey</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 1/4 cups Sugar + 1/4 cup Liquid</span></li>
+                        <li><span class="sub-original">1 cup Molasses</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Honey</span></li>
                     </ul>
                 </div>
                 <div class="tool-card">
-                    <h3><i class="fas fa-cheese"></i> Dairy Alternatives</h3>
+                    <h3><i class="fas fa-cheese"></i> Dairy & Fridge</h3>
                     <ul class="sub-list">
-                        <li><span class="sub-original">1 cup Buttermilk</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Milk + 1 tbsp Lemon Juice (let sit 5m)</span></li>
-                        <li><span class="sub-original">1 cup Heavy Cream</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3/4 cup Milk + 1/3 cup Melted Butter</span></li>
-                        <li><span class="sub-original">1 cup Sour Cream</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Plain Greek Yogurt</span></li>
-                        <li><span class="sub-original">1 cup Whole Milk</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/2 cup Evaporated Milk + 1/2 cup Water</span></li>
+                        <li><span class="sub-original">1 cup Butter</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Margarine OR 7/8 cup Lard + 1/2 tsp Salt</span></li>
+                        <li><span class="sub-original">1 cup Buttermilk</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 tbsp Vinegar + Sweet Milk (to 1 cup) OR 2/3 cup Yogurt + 1/3 cup Milk</span></li>
+                        <li><span class="sub-original">1 cup Cream</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/2 cup Butter + 3/4 cup Milk</span></li>
+                        <li><span class="sub-original">1 Whole Egg</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">2 Egg Yolks</span></li>
+                        <li><span class="sub-original">1 cup Milk, Fresh Whole</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Reconstituted Dry Milk + 2 tsp Butter</span></li>
+                        <li><span class="sub-original">1 cup Milk, Whole</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/2 cup Evaporated Milk + 1/2 cup Water</span></li>
+                        <li><span class="sub-original">1 cup Ricotta Cheese</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Cottage Cheese + 1 tbsp Skim Milk</span></li>
+                        <li><span class="sub-original">1 cup Sour Cream</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Yogurt</span></li>
+                        <li><span class="sub-original">1 cup Yogurt</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Buttermilk</span></li>
                     </ul>
                 </div>
                 <div class="tool-card">
-                    <h3><i class="fas fa-pepper-hot"></i> Savory & Spices</h3>
+                    <h3><i class="fas fa-pepper-hot"></i> Savory & Misc</h3>
                     <ul class="sub-list">
-                        <li><span class="sub-original">1 clove Garlic</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/4 tsp Garlic Powder</span></li>
-                        <li><span class="sub-original">1 tbsp Fresh Herbs</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 tsp Dried Herbs</span></li>
-                        <li><span class="sub-original">1 cup Chicken Broth</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 Bouillon Cube + 1 cup Boiling Water</span></li>
-                        <li><span class="sub-original">1 tbsp Lemon Juice</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/2 tbsp Vinegar</span></li>
+                        <li><span class="sub-original">1 small clove Garlic</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/8 tsp Garlic Powder</span></li>
+                        <li><span class="sub-original">1 tbsp Fresh Herbs</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 tsp Dried</span></li>
+                        <li><span class="sub-original">1 tbsp Mustard, Prepared</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 tsp Dry Mustard</span></li>
+                        <li><span class="sub-original">1 Onion, Fried</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 Leek, Chopped and Fried</span></li>
+                        <li><span class="sub-original">1 tbsp Onion, Minced</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 Small Fresh Onion</span></li>
+                        <li><span class="sub-original">1/2 cup Wine</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/4 cup Vinegar (Red/White) + 1 tbsp Sugar + 1/4 cup Water</span></li>
                     </ul>
-                </div>
-                <div class="tool-card" style="display: flex; justify-content: center; align-items: center; color: var(--text-light);">
-                    <div style="text-align:center;">
-                        <i class="fas fa-lightbulb" style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);"></i>
-                        <p>Need more? Try Googling "[ingredient] substitute"!</p>
-                    </div>
                 </div>
             </div>
         </section>
