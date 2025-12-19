@@ -135,6 +135,26 @@
         }
         input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.1); }
 
+        /* Dictation Styles */
+        .input-wrapper { position: relative; width: 100%; }
+        .mic-btn {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; font-size: 1.1rem; color: var(--text-light);
+            cursor: pointer; transition: 0.2s; z-index: 5;
+        }
+        textarea + .mic-btn { top: 20px; transform: none; }
+        .mic-btn:hover { color: var(--primary); transform: scale(1.1); }
+        .mic-btn.listening { color: var(--danger); animation: pulse-red 1.5s infinite; }
+        
+        @keyframes pulse-red {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        /* Fix for textarea positioning */
+        .input-wrapper textarea { padding-right: 40px; }
+        .input-wrapper input { padding-right: 40px; }
+
         select { display: none; } 
         .custom-select-container { position: relative; width: 170px; font-family: 'Inter', sans-serif; font-size: 0.95rem; }
         .modal .custom-select-container { width: 100%; } 
@@ -581,7 +601,10 @@
             </div>
             <div class="form-group">
                 <label>Title</label>
-                <input type="text" id="inp-title" placeholder="e.g. Grandma's Lasagna">
+                <div class="input-wrapper">
+                    <input type="text" id="inp-title" placeholder="e.g. Grandma's Lasagna">
+                    <button class="mic-btn" onclick="toggleDictation('inp-title', this)"><i class="fas fa-microphone"></i></button>
+                </div>
             </div>
             
             <div class="form-group">
@@ -592,11 +615,17 @@
 
             <div class="form-group">
                 <label>Ingredients (one per line)</label>
-                <textarea id="inp-ingredients" rows="4" placeholder="2 Eggs&#10;1 cup Flour"></textarea>
+                <div class="input-wrapper">
+                    <textarea id="inp-ingredients" rows="4" placeholder="2 Eggs&#10;1 cup Flour"></textarea>
+                    <button class="mic-btn" onclick="toggleDictation('inp-ingredients', this)"><i class="fas fa-microphone"></i></button>
+                </div>
             </div>
             <div class="form-group">
                 <label>Instructions</label>
-                <textarea id="inp-instructions" rows="6" placeholder="1. Mix ingredients...&#10;2. Bake at 350..."></textarea>
+                <div class="input-wrapper">
+                    <textarea id="inp-instructions" rows="6" placeholder="1. Mix ingredients...&#10;2. Bake at 350..."></textarea>
+                    <button class="mic-btn" onclick="toggleDictation('inp-instructions', this)"><i class="fas fa-microphone"></i></button>
+                </div>
             </div>
             <input type="hidden" id="inp-id">
             <div class="modal-actions">
@@ -752,6 +781,54 @@
                 document.getElementById('user-section').style.display = 'none';
             }
         });
+
+        // --- V.50 Voice Dictation Logic ---
+        let recognition = null;
+        let activeInputId = null;
+        let activeMicBtn = null;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false; 
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                if(activeMicBtn) activeMicBtn.classList.add('listening');
+            };
+
+            recognition.onend = function() {
+                if(activeMicBtn) activeMicBtn.classList.remove('listening');
+                activeInputId = null;
+                activeMicBtn = null;
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                if(activeInputId) {
+                    const input = document.getElementById(activeInputId);
+                    // Append text with a space if not empty
+                    if(input.value.length > 0) input.value += ' ' + transcript;
+                    else input.value = transcript;
+                }
+            };
+        }
+
+        window.toggleDictation = (inputId, btnElement) => {
+            if (!recognition) {
+                alert("Your browser does not support speech recognition. Please use Chrome or Safari.");
+                return;
+            }
+            if (activeInputId === inputId) {
+                recognition.stop(); 
+            } else {
+                activeInputId = inputId;
+                activeMicBtn = btnElement;
+                recognition.start();
+            }
+        };
+        // ----------------------------------
 
         function initColorPicker() {
             const container = document.getElementById('color-picker-container');
