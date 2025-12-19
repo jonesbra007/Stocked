@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stocked | Meal Planner V.37</title>
+    <title>Stocked | Meal Planner V.40</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     
     <style>
+        /* --- CSS VARIABLES (Theming Engine) --- */
         :root {
+            /* Light Theme (Default) */
             --bg-color: #F9F7F2;
             --card-bg: #FFFFFF;
+            --nav-bg: rgba(249, 247, 242, 0.95);
             --primary: #5C8D89;
             --primary-dark: #416B67;
             --accent: #D97D5D;
@@ -22,6 +25,31 @@
             --border-radius: 16px;
             --shadow: 0 8px 24px rgba(44, 51, 51, 0.06);
             --border: 1px solid #E6E2DA;
+            --input-bg: #FFFFFF;
+            --slot-bg: #F7F5F0;
+            --hover-bg: #EBE8E0;
+            --scroll-track: #f1f1f1;
+            --scroll-thumb: #c1c1c1;
+        }
+
+        /* Dark Theme Overrides */
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1E1E1E;
+            --nav-bg: rgba(18, 18, 18, 0.95);
+            --primary: #5C8D89; /* Keep brand identity */
+            --primary-dark: #4A7A76;
+            --accent: #E08E70;
+            --text-main: #E0E0E0;
+            --text-light: #A0A0A0;
+            --danger: #ff6b6b;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            --border: 1px solid #333333;
+            --input-bg: #2C2C2C;
+            --slot-bg: #252525;
+            --hover-bg: #333333;
+            --scroll-track: #2a2a2a;
+            --scroll-thumb: #555;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,6 +60,7 @@
             font-family: 'Inter', sans-serif; 
             padding-bottom: 80px;
             line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         h1, h2, h3, .nav-brand, .recipe-title, .cook-title, .auth-title, .confirm-title {
@@ -39,9 +68,10 @@
             letter-spacing: 0.5px;
         }
 
+        /* Navigation */
         nav {
-            background: rgba(249, 247, 242, 0.95);
-            padding: 1.5rem 2rem;
+            background: var(--nav-bg);
+            padding: 1rem 2rem;
             position: sticky;
             top: 0;
             z-index: 100;
@@ -50,30 +80,53 @@
             align-items: center;
             border-bottom: 1px solid rgba(0,0,0,0.05);
             backdrop-filter: blur(10px);
+            transition: background 0.3s;
         }
         .nav-brand { font-size: 1.8rem; color: var(--text-main); display: flex; align-items: center; gap: 12px; }
         .nav-brand i { color: var(--primary); }
         
-        .nav-tabs { background: #EBE8E0; padding: 4px; border-radius: 30px; display: flex; gap: 4px; }
+        .nav-center { display: flex; gap: 4px; background: var(--hover-bg); padding: 4px; border-radius: 30px; }
         .nav-tabs button {
             background: none; border: none; padding: 0.6rem 1.5rem; font-size: 0.9rem; font-weight: 600;
             cursor: pointer; color: var(--text-light); border-radius: 25px; transition: all 0.3s ease; font-family: 'Inter', sans-serif;
         }
         .nav-tabs button.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        /* User Section */
+        .nav-right { display: flex; align-items: center; gap: 1rem; position: relative; }
+        .user-greeting { font-weight: 600; color: var(--primary); font-size: 0.95rem; display: none; }
         
-        .logout-btn { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; margin-left: 1rem; transition: 0.2s; }
-        .logout-btn:hover { color: var(--accent); }
+        .settings-btn { 
+            background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1.2rem; 
+            transition: 0.2s; padding: 8px; border-radius: 50%; 
+        }
+        .settings-btn:hover { color: var(--primary); background: var(--hover-bg); }
+        
+        .settings-dropdown {
+            position: absolute; top: 120%; right: 0;
+            background: var(--card-bg); border: var(--border); border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            width: 180px; display: none; flex-direction: column; overflow: hidden;
+        }
+        .settings-dropdown.show { display: flex; }
+        
+        .settings-item {
+            padding: 12px 16px; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--text-main); transition: 0.2s;
+        }
+        .settings-item:hover { background: var(--hover-bg); color: var(--primary); }
+        .settings-item.danger { color: var(--danger); border-top: 1px solid var(--border); }
+        .settings-item.danger:hover { background: rgba(231, 76, 60, 0.1); }
 
         .container { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
         .page-section { display: none; opacity: 0; transition: opacity 0.3s ease; }
         .page-section.active { display: block; opacity: 1; }
 
-        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
-        .header-row h3, .header-row h2 { margin-bottom: 0; border: none; padding: 0; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+        .header-row h3, .header-row h2 { margin-bottom: 0; border: none; padding: 0; color: var(--text-main); }
         
         .btn-sm {
             padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid #D1D5DB; 
-            background: white; color: var(--text-light); font-weight: 600; cursor: pointer; transition: 0.2s;
+            background: var(--card-bg); color: var(--text-light); font-weight: 600; cursor: pointer; transition: 0.2s;
             display: flex; align-items: center; gap: 6px; font-family: 'Inter', sans-serif;
         }
         .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
@@ -81,131 +134,63 @@
 
         /* Custom Inputs */
         input[type="text"], input[type="email"], input[type="password"], textarea {
-            padding: 0.8rem 1rem; border: 1px solid #D1D5DB; border-radius: 8px; background: #FFFFFF; width: 100%; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: 0.2s;
+            padding: 0.8rem 1rem; border: var(--border); border-radius: 8px; background: var(--input-bg); width: 100%; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: 0.2s; color: var(--text-main);
         }
         input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.1); }
 
         /* Custom Select Styles */
         select { display: none; } 
-
-        .custom-select-container {
-            position: relative;
-            width: 170px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.95rem;
-        }
-        
+        .custom-select-container { position: relative; width: 170px; font-family: 'Inter', sans-serif; font-size: 0.95rem; }
         .modal .custom-select-container { width: 100%; } 
-
-        .select-selected {
-            background-color: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #D1D5DB;
-            padding: 0.8rem 1rem;
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: 0.2s;
-            white-space: nowrap;
-            overflow: hidden;
+        
+        .select-selected { 
+            background-color: var(--input-bg); border-radius: 8px; border: var(--border); padding: 0.8rem 1rem; 
+            cursor: pointer; user-select: none; display: flex; justify-content: space-between; align-items: center; 
+            transition: 0.2s; white-space: nowrap; overflow: hidden; color: var(--text-main);
         }
-
-        .select-selected:after {
-            content: "";
-            width: 0.8em; height: 0.8em;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235C8D89' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-size: contain;
-            background-position: center;
-            transform: rotate(0deg);
-            transition: transform 0.2s;
-            flex-shrink: 0; 
-            margin-left: 10px;
+        .select-selected:after { 
+            content: ""; width: 0.8em; height: 0.8em; 
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235C8D89' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); 
+            background-repeat: no-repeat; background-size: contain; background-position: center; 
+            transform: rotate(0deg); transition: transform 0.2s; flex-shrink: 0; margin-left: 10px; 
         }
-
-        .select-selected.select-arrow-active:after {
-            transform: rotate(180deg);
+        .select-selected.select-arrow-active:after { transform: rotate(180deg); }
+        .select-selected.select-arrow-active { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.1); }
+        
+        .select-items { 
+            position: absolute; background-color: var(--input-bg); top: 110%; left: 0; right: 0; z-index: 99; 
+            border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border: var(--border); 
+            overflow: hidden; max-height: 250px; overflow-y: auto; 
         }
-
-        .select-selected.select-arrow-active {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.1);
-        }
-
-        .select-items {
-            position: absolute;
-            background-color: #ffffff;
-            top: 110%;
-            left: 0;
-            right: 0;
-            z-index: 99;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border: 1px solid #E6E2DA;
-            overflow: hidden;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
         .select-hide { display: none; }
-
-        .select-items div {
-            color: var(--text-main);
-            padding: 0.8rem 1rem;
-            cursor: pointer;
-            border-bottom: 1px solid #f7f7f7;
-            transition: 0.1s;
-            white-space: nowrap;
-        }
-
+        .select-items div { color: var(--text-main); padding: 0.8rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: 0.1s; white-space: nowrap; }
         .select-items div:last-child { border-bottom: none; }
-
-        .select-items div:hover, .same-as-selected {
-            background-color: var(--primary);
-            color: #ffffff;
-        }
+        .select-items div:hover, .same-as-selected { background-color: var(--primary); color: #ffffff; }
 
         /* Filtering & Category Management */
         .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
         .filter-scroll { display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.5rem 0 0.5rem 0; scrollbar-width: none; flex-grow: 1; }
         .filter-scroll::-webkit-scrollbar { display: none; }
-        
-        .filter-pill {
-            background: #EBE8E0; border: none; padding: 0.5rem 1.2rem; border-radius: 20px;
-            font-size: 0.85rem; font-weight: 600; color: var(--text-light); white-space: nowrap; cursor: pointer; transition: 0.2s;
-        }
-        .filter-pill:hover { background: #E0DDD5; }
+        .filter-pill { background: var(--hover-bg); border: none; padding: 0.5rem 1.2rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--text-light); white-space: nowrap; cursor: pointer; transition: 0.2s; }
+        .filter-pill:hover { background: var(--border); }
         .filter-pill.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(92, 141, 137, 0.3); }
-        
-        .btn-manage-cats {
-            background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; padding: 8px; transition: 0.2s; border-radius: 50%;
-        }
-        .btn-manage-cats:hover { background: #EBE8E0; color: var(--primary); }
+        .btn-manage-cats { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; padding: 8px; transition: 0.2s; border-radius: 50%; }
+        .btn-manage-cats:hover { background: var(--hover-bg); color: var(--primary); }
 
         /* Category List */
         .cat-list { list-style: none; margin-top: 1rem; }
-        
-        .cat-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.8rem; background: #fff; border: 1px solid #eee; border-radius: 8px; margin-bottom: 0.5rem;
-            cursor: grab; transition: 0.2s;
-        }
+        .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--input-bg); border: var(--border); border-radius: 8px; margin-bottom: 0.5rem; cursor: grab; transition: 0.2s; color: var(--text-main); }
         .cat-item:active { cursor: grabbing; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: scale(1.02); z-index: 10; }
-        .cat-item.dragging { opacity: 0.5; background: #f9f9f9; }
-        .cat-grip { color: #ccc; margin-right: 10px; cursor: grab; }
+        .cat-item.dragging { opacity: 0.5; background: var(--hover-bg); }
+        .cat-grip { color: var(--text-light); margin-right: 10px; cursor: grab; }
         .cat-name { flex-grow: 1; font-weight: 500; }
-        .cat-delete { color: #ccc; cursor: pointer; padding: 5px; }
+        .cat-delete { color: var(--text-light); cursor: pointer; padding: 5px; }
         .cat-delete:hover { color: var(--danger); }
 
         /* Recipe Cards */
         .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; align-items: start; }
-        .recipe-card {
-            background: var(--card-bg); border-radius: var(--border-radius); padding: 1.5rem; border: var(--border); box-shadow: var(--shadow);
-            position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; min-height: 260px; overflow: hidden; 
-        }
-        .recipe-card:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(44, 51, 51, 0.1); border-color: var(--primary); }
+        .recipe-card { background: var(--card-bg); border-radius: var(--border-radius); padding: 1.5rem; border: var(--border); box-shadow: var(--shadow); position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; min-height: 260px; overflow: hidden; }
+        .recipe-card:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(0,0,0, 0.1); border-color: var(--primary); }
         .clickable-area { cursor: pointer; flex-grow: 1; display: flex; flex-direction: column; }
         .recipe-details { font-size: 0.95rem; color: var(--text-light); margin-bottom: 1.2rem; }
         .recipe-details h4 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; color: var(--text-main); opacity: 0.6; }
@@ -218,27 +203,27 @@
         .cat-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; color: white; background: #ccc; display: inline-block; margin-bottom: 0.5rem; letter-spacing: 0.5px; }
         .fav-btn { background: none; border: none; cursor: pointer; color: #D1D5DB; font-size: 1.2rem; z-index: 2; transition: 0.2s;}
         .fav-btn:hover, .fav-btn.active { color: #f1c40f; }
-        .card-actions { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; border-top: 1px dashed #E6E2DA; padding-top: 1rem; margin-top: auto; }
+        .card-actions { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 1rem; margin-top: auto; }
         .action-buttons { display: flex; gap: 0.8rem; }
         .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; transition: 0.2s; z-index: 2;}
         .btn-icon:hover { color: var(--primary); transform: scale(1.1); }
         .btn-icon.delete:hover { color: var(--danger); }
         .btn-cook { background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; z-index: 2; }
         .btn-cook:hover { background: var(--primary-dark); }
-        .expand-hint { font-size: 0.75rem; color: #9CA3AF; transition: 0.3s; font-weight: 500; }
+        .expand-hint { font-size: 0.75rem; color: var(--text-light); transition: 0.3s; font-weight: 500; }
 
         .planner-grid { display: grid; grid-template-columns: 80px repeat(7, 1fr); gap: 8px; overflow-x: auto; margin-bottom: 2.5rem; background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: var(--border); }
         .day-header { font-family: 'DM Serif Display', serif; text-align: center; padding-bottom: 1rem; font-size: 1.1rem; color: var(--text-main); border-bottom: 2px solid var(--bg-color); margin-bottom: 0.5rem; }
         .meal-row-label { font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
         .meal-row-label i { font-size: 1.1rem; margin-bottom: 4px; color: var(--primary); opacity: 0.7; }
-        .meal-slot { background: #F7F5F0; border: 1px solid transparent; border-radius: 12px; min-height: 90px; padding: 4px; font-size: 0.8rem; position: relative; transition: 0.2s; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .meal-slot:hover { background: #EBE8E0; }
-        .meal-slot.drag-over { background: #E8F3F1; border: 2px dashed var(--primary); }
+        .meal-slot { background: var(--slot-bg); border: 1px solid transparent; border-radius: 12px; min-height: 90px; padding: 4px; font-size: 0.8rem; position: relative; transition: 0.2s; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .meal-slot:hover { background: var(--hover-bg); }
+        .meal-slot.drag-over { background: var(--hover-bg); border: 2px dashed var(--primary); }
         .meal-slot[data-type^="dinner"] { min-height: 45px; padding: 2px; }
         .meal-slot[data-type^="dinner"] .slot-placeholder { font-size: 0.8rem; }
-        .slot-placeholder { color: #D1D5DB; font-size: 1.1rem; pointer-events: none; transition: 0.2s; }
+        .slot-placeholder { color: var(--text-light); font-size: 1.1rem; pointer-events: none; transition: 0.2s; }
         .meal-slot:hover .slot-placeholder { color: var(--primary); transform: scale(1.2); }
-        .planned-meal { background: white; padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); cursor: default; font-weight: 500; font-size: 0.85rem; }
+        .planned-meal { background: var(--card-bg); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); cursor: default; font-weight: 500; font-size: 0.85rem; color: var(--text-main); }
         .meal-slot[data-type^="dinner"] .planned-meal { padding: 2px 8px; font-size: 0.75rem; border-radius: 6px; }
         .remove-meal { cursor: pointer; color: #D1D5DB; margin-left: 5px; transition: 0.2s;}
         .remove-meal:hover { color: var(--accent); }
@@ -246,18 +231,18 @@
         .tools-section { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
         @media (max-width: 768px) { .tools-section { grid-template-columns: 1fr; } .planner-grid { display: block; } .meal-slot { margin-bottom: 10px; } }
         .tool-card { background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow); display: flex; flex-direction: column; max-height: 650px; border: var(--border); }
-        .tool-card h3 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; margin:0;}
+        .tool-card h3 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; margin:0; color: var(--text-main); }
         .tool-card h3 i { color: var(--accent); font-size: 1.2rem; }
         .inventory-container, .grocery-container { flex-grow: 1; overflow-y: auto; margin-bottom: 1.5rem; padding-right: 5px; }
         .inv-category-header { color: var(--primary); font-weight: 700; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; padding: 0.5rem 0; margin-top: 1rem; border-bottom: 1px solid rgba(92, 141, 137, 0.2); margin-bottom: 0.5rem; }
         .inv-category-header:first-child { margin-top: 0; }
         .inventory-item-row, .grocery-item { display: flex; align-items: center; padding: 0.5rem 0.5rem; border-radius: 6px; transition: 0.2s; margin-bottom: 2px; }
-        .inventory-item-row:hover, .grocery-item:hover { background: #F9F7F2; }
+        .inventory-item-row:hover, .grocery-item:hover { background: var(--slot-bg); }
         .inventory-item-row input, .grocery-item input { margin-right: 12px; accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; border-color: #D1D5DB; }
         .inventory-item-row label, .grocery-item label { cursor: pointer; flex-grow: 1; font-size: 0.95rem; color: var(--text-main); font-weight: 400; }
         .delete-item { font-size: 0.8rem; color: #D1D5DB; cursor: pointer; margin-left: 8px; padding: 4px; transition: 0.2s; }
         .delete-item:hover { color: var(--danger); transform: scale(1.1); }
-        .grocery-item.manual-item { background-color: #F0F4F4; border-left: 3px solid var(--text-light); }
+        .grocery-item.manual-item { background-color: var(--slot-bg); border-left: 3px solid var(--text-light); }
         .delete-manual { font-size: 0.8rem; color: #bbb; cursor: pointer; margin-left: 8px;}
         .delete-manual:hover { color: var(--accent); }
         
@@ -268,20 +253,32 @@
         .fab { position: fixed; bottom: 2.5rem; right: 2.5rem; background: var(--primary); color: white; width: 64px; height: 64px; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 10px 25px rgba(92, 141, 137, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 200; transition: all 0.3s ease; }
         .fab:hover { transform: scale(1.1) rotate(90deg); background: var(--primary-dark); }
 
+        /* V.40 Substitutions Styles */
+        .sub-list { list-style: none; margin-top: 1rem; }
+        .sub-list li {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.8rem 0; border-bottom: 1px solid var(--border);
+            color: var(--text-main); font-size: 0.95rem;
+        }
+        .sub-list li:last-child { border-bottom: none; }
+        .sub-original { font-weight: 600; color: var(--primary); }
+        .sub-arrow { color: var(--accent); margin: 0 12px; font-size: 0.9rem; }
+        .sub-replacement { color: var(--text-main); text-align: right; flex-grow: 1; }
+
         /* --- Modals --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 51, 51, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal-overlay.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        .modal { background: white; padding: 2.5rem; border-radius: 24px; width: 95%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); max-height: 85vh; overflow-y: auto; position: relative; }
+        .modal { background: var(--card-bg); padding: 2.5rem; border-radius: 24px; width: 95%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); max-height: 85vh; overflow-y: auto; position: relative; border: var(--border); }
         .recipe-picker-list { list-style: none; margin-top: 1rem; }
-        .picker-item { padding: 1rem 1.2rem; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-radius: 8px; }
-        .picker-item:hover { background: #F7F5F0; color: var(--primary); padding-left: 1.5rem; }
+        .picker-item { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-radius: 8px; color: var(--text-main); }
+        .picker-item:hover { background: var(--slot-bg); color: var(--primary); padding-left: 1.5rem; }
         .picker-item:last-child { border-bottom: none; }
         .modal-header-row { 
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
-            position: sticky; top: 0; background: white; z-index: 20; padding-top: 5px;
+            position: sticky; top: 0; background: var(--card-bg); z-index: 20; padding-top: 5px;
         }
         
-        .modal h2 { margin-bottom: 0; color: var(--primary-dark); font-size: 1.8rem; }
+        .modal h2 { margin-bottom: 0; color: var(--primary); font-size: 1.8rem; }
         .modal-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-light); transition: 0.2s; }
         .modal-close-btn:hover { color: var(--danger); transform: scale(1.1); }
         .form-group { margin-bottom: 1.2rem; }
@@ -289,8 +286,8 @@
         .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
         button.primary { background: var(--primary); color: white; border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1rem; }
         button.primary:hover { background: var(--primary-dark); box-shadow: 0 4px 12px rgba(92, 141, 137, 0.3); }
-        button.secondary { background: #F3F4F6; color: var(--text-main); border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1rem; }
-        button.secondary:hover { background: #E5E7EB; }
+        button.secondary { background: var(--hover-bg); color: var(--text-main); border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1rem; }
+        button.secondary:hover { background: var(--border); }
         button.danger { background: var(--danger); color: white; border: none; padding: 0.8rem 2rem; border-radius: 50px; font-weight: 600; font-size: 1rem; }
         button.danger:hover { background: #c0392b; box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3); }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -304,20 +301,20 @@
         .password-toggle { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-light); cursor: pointer; font-size: 1rem; transition: color 0.2s; }
         .password-toggle:hover { color: var(--primary); }
 
-        #cook-mode-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; z-index: 2000; display: none; flex-direction: column; overflow-y: auto; }
+        #cook-mode-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color); z-index: 2000; display: none; flex-direction: column; overflow-y: auto; }
         #cook-mode-overlay.active { display: flex; }
-        .cook-header { padding: 1.5rem 2rem; background: var(--bg-color); border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .cook-header { padding: 1.5rem 2rem; background: var(--bg-color); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
         .cook-title { font-size: 1.8rem; margin: 0; color: var(--text-main); }
-        .cook-close-btn { background: #eee; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: #333; display: flex; align-items: center; justify-content: center; }
-        .cook-body { padding: 2rem; display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .cook-close-btn { background: var(--hover-bg); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; color: var(--text-main); display: flex; align-items: center; justify-content: center; }
+        .cook-body { padding: 2rem; display: grid; grid-template-columns: 1fr 2fr; gap: 3rem; max-width: 1200px; margin: 0 auto; width: 100%; color: var(--text-main); }
         @media(max-width: 768px) { .cook-body { grid-template-columns: 1fr; gap: 2rem; } }
-        .cook-section h3 { font-size: 1.4rem; border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--primary-dark); }
-        .cook-list-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 1.2rem; font-size: 1.15rem; line-height: 1.6; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: 0.2s; }
-        .cook-list-item:hover { background: #f9f9f9; }
+        .cook-section h3 { font-size: 1.4rem; border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--primary); }
+        .cook-list-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 1.2rem; font-size: 1.15rem; line-height: 1.6; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: 0.2s; color: var(--text-main); }
+        .cook-list-item:hover { background: var(--slot-bg); }
         .cook-list-item input { transform: scale(1.5); margin-top: 6px; accent-color: var(--primary); }
-        .cook-list-item.done { text-decoration: line-through; color: #aaa; }
+        .cook-list-item.done { text-decoration: line-through; color: var(--text-light); }
 
-        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 3000; justify-content: center; align-items: center; font-size: 2rem; color: var(--primary); }
+        #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--nav-bg); z-index: 3000; justify-content: center; align-items: center; font-size: 2rem; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -326,11 +323,34 @@
 
     <nav>
         <div class="nav-brand"><i class="fas fa-utensils"></i> Stocked</div>
-        <div class="nav-tabs" id="nav-actions" style="display:none;">
-            <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
-            <button onclick="switchTab('planning')">Planner</button>
+        <div class="nav-center" id="nav-actions" style="display:none;">
+            <div class="nav-tabs">
+                <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button onclick="switchTab('planning')">Planner</button>
+                <button onclick="switchTab('substitutions')">Substitutions</button>
+            </div>
         </div>
-        <button id="logout-btn" class="logout-btn" onclick="handleLogout()" style="display:none;">Logout <i class="fas fa-sign-out-alt"></i></button>
+        
+        <div class="nav-right" id="user-section" style="display:none;">
+            <span class="user-greeting" id="user-greeting"></span>
+            <div style="position:relative;">
+                <button class="settings-btn" onclick="toggleSettingsMenu()">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div id="settings-dropdown" class="settings-dropdown">
+                    <div class="settings-item" onclick="openProfileModal()">
+                        <i class="fas fa-user"></i> Profile
+                    </div>
+                    <div class="settings-item" onclick="toggleDarkMode()">
+                        <i class="fas fa-moon"></i> Dark Mode
+                        <i id="dark-mode-icon" class="fas fa-toggle-off" style="margin-left:auto; color:var(--text-light);"></i>
+                    </div>
+                    <div class="settings-item danger" onclick="handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </div>
+                </div>
+            </div>
+        </div>
     </nav>
 
     <div class="container" id="main-content" style="display:none;">
@@ -389,7 +409,7 @@
                         <button class="btn-sm" id="btn-copy-list" onclick="copyGroceryList()"><i class="far fa-copy"></i> Copy</button>
                     </div>
                     <div id="grocery-list-output" class="grocery-container"></div>
-                    <div class="inventory-add-row" style="border-top: 1px dashed #E6E2DA; padding-top: 1.5rem;">
+                    <div class="inventory-add-row" style="border-top: 1px dashed var(--border); padding-top: 1.5rem;">
                         <div class="custom-select-container" id="groc-cat-select">
                             <select id="manual-grocery-category">
                                 <option value="Produce">Produce</option><option value="Meat & Protein">Meat & Protein</option><option value="Dairy & Fridge">Dairy & Fridge</option><option value="Pantry & Grains">Pantry & Grains</option><option value="Spices & Seasonings">Spices</option><option value="Other">Other</option>
@@ -397,6 +417,48 @@
                         </div>
                         <input type="text" id="manual-grocery-item" placeholder="Add extra item...">
                         <button onclick="addManualGroceryItem()"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="substitutions" class="page-section">
+            <br>
+            <div class="header-row">
+                <h2>Common Substitutions</h2>
+            </div>
+            <div class="tools-section">
+                <div class="tool-card">
+                    <h3><i class="fas fa-cookie-bite"></i> Baking Essentials</h3>
+                    <ul class="sub-list">
+                        <li><span class="sub-original">1 tsp Baking Powder</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/4 tsp Baking Soda + 1/2 tsp Cream of Tartar</span></li>
+                        <li><span class="sub-original">1 cup Cake Flour</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3/4 cup All-Purpose Flour + 2 tbsp Cornstarch</span></li>
+                        <li><span class="sub-original">1 oz Unsweetened Chocolate</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3 tbsp Cocoa Powder + 1 tbsp Oil/Butter</span></li>
+                        <li><span class="sub-original">1 cup Brown Sugar</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup White Sugar + 1 tbsp Molasses</span></li>
+                    </ul>
+                </div>
+                <div class="tool-card">
+                    <h3><i class="fas fa-cheese"></i> Dairy Alternatives</h3>
+                    <ul class="sub-list">
+                        <li><span class="sub-original">1 cup Buttermilk</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Milk + 1 tbsp Lemon Juice (let sit 5m)</span></li>
+                        <li><span class="sub-original">1 cup Heavy Cream</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">3/4 cup Milk + 1/3 cup Melted Butter</span></li>
+                        <li><span class="sub-original">1 cup Sour Cream</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 cup Plain Greek Yogurt</span></li>
+                        <li><span class="sub-original">1 cup Whole Milk</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/2 cup Evaporated Milk + 1/2 cup Water</span></li>
+                    </ul>
+                </div>
+                <div class="tool-card">
+                    <h3><i class="fas fa-pepper-hot"></i> Savory & Spices</h3>
+                    <ul class="sub-list">
+                        <li><span class="sub-original">1 clove Garlic</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/4 tsp Garlic Powder</span></li>
+                        <li><span class="sub-original">1 tbsp Fresh Herbs</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 tsp Dried Herbs</span></li>
+                        <li><span class="sub-original">1 cup Chicken Broth</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1 Bouillon Cube + 1 cup Boiling Water</span></li>
+                        <li><span class="sub-original">1 tbsp Lemon Juice</span><i class="fas fa-arrow-right sub-arrow"></i><span class="sub-replacement">1/2 tbsp Vinegar</span></li>
+                    </ul>
+                </div>
+                <div class="tool-card" style="display: flex; justify-content: center; align-items: center; color: var(--text-light);">
+                    <div style="text-align:center;">
+                        <i class="fas fa-lightbulb" style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent);"></i>
+                        <p>Need more? Try Googling "[ingredient] substitute"!</p>
                     </div>
                 </div>
             </div>
@@ -417,7 +479,7 @@
     <div id="auth-modal" class="modal-overlay open">
         <div class="modal">
             <h2 id="auth-title" class="auth-title">Welcome to Stocked</h2>
-            <p style="color:#777; margin-bottom:1.5rem;">Login to save your recipes and plans.</p>
+            <p style="color:var(--text-light); margin-bottom:1.5rem;">Login to save your recipes and plans.</p>
             <div id="auth-error"></div>
             <div class="form-group">
                 <label>Email</label>
@@ -435,6 +497,26 @@
         </div>
     </div>
 
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <h2>Your Profile</h2>
+                <button class="modal-close-btn" onclick="closeProfileModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="form-group">
+                <label>First Name</label>
+                <input type="text" id="profile-first" placeholder="e.g. Braden">
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                <input type="text" id="profile-last" placeholder="e.g. Smith">
+            </div>
+            <div class="modal-actions">
+                <button class="primary" onclick="saveProfile()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <div id="cat-manager-modal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header-row">
@@ -445,7 +527,7 @@
                 <input type="text" id="new-cat-name" placeholder="New Category Name (e.g. Thai)">
                 <button onclick="addNewCategory()"><i class="fas fa-plus"></i></button>
             </div>
-            <p style="font-size:0.85rem; color:#999; margin-bottom:0.5rem;">Drag to reorder.</p>
+            <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:0.5rem;">Drag to reorder.</p>
             <ul id="manage-cat-list" class="cat-list">
                 </ul>
             <div class="modal-actions">
@@ -537,6 +619,9 @@
         let inventory = [];
         let manualGrocery = [];
         let appCategories = ["Italian", "Mexican", "Asian", "American", "Healthy", "Breakfast", "Dessert", "Other"];
+        let userProfile = { firstName: '', lastName: '' };
+        // V.39 Dark Mode State
+        let isDarkMode = false;
 
         const INVENTORY_CATEGORIES = ["Produce", "Meat & Protein", "Dairy & Fridge", "Pantry & Grains", "Spices & Seasonings", "Other"];
         const CATEGORY_KEYWORDS = {
@@ -560,30 +645,106 @@
             return `hsl(${h}, 65%, 60%)`; 
         }
 
+        // --- V.39 DARK MODE LOGIC ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                isDarkMode = true;
+                document.body.setAttribute('data-theme', 'dark');
+            }
+            updateDarkModeIcon();
+        }
+
+        window.toggleDarkMode = () => {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            }
+            updateDarkModeIcon();
+        };
+
+        function updateDarkModeIcon() {
+            const icon = document.getElementById('dark-mode-icon');
+            if (isDarkMode) {
+                icon.className = 'fas fa-toggle-on';
+                icon.style.color = 'var(--primary)';
+            } else {
+                icon.className = 'fas fa-toggle-off';
+                icon.style.color = 'var(--text-light)';
+            }
+        }
+
+        // Initialize Theme immediately
+        initTheme();
+
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('auth-modal').classList.remove('open');
                 document.getElementById('main-content').style.display = 'block';
                 document.getElementById('nav-actions').style.display = 'flex';
-                document.getElementById('logout-btn').style.display = 'block';
+                document.getElementById('user-section').style.display = 'flex'; 
                 await loadUserData();
-                // Initialize custom selects after data load
                 initCustomSelects();
             } else {
                 currentUser = null;
                 document.getElementById('auth-modal').classList.add('open');
                 document.getElementById('main-content').style.display = 'none';
                 document.getElementById('nav-actions').style.display = 'none';
-                document.getElementById('logout-btn').style.display = 'none';
+                document.getElementById('user-section').style.display = 'none';
             }
         });
+
+        window.toggleSettingsMenu = () => {
+            const menu = document.getElementById('settings-dropdown');
+            menu.classList.toggle('show');
+        };
+        
+        window.addEventListener('click', function(e) {
+            if (!e.target.closest('.settings-btn') && !e.target.closest('.settings-dropdown')) {
+                document.getElementById('settings-dropdown').classList.remove('show');
+            }
+        });
+
+        window.openProfileModal = () => {
+            document.getElementById('profile-first').value = userProfile.firstName || '';
+            document.getElementById('profile-last').value = userProfile.lastName || '';
+            document.getElementById('profile-modal').classList.add('open');
+            document.getElementById('settings-dropdown').classList.remove('show');
+        };
+        window.closeProfileModal = () => document.getElementById('profile-modal').classList.remove('open');
+
+        window.saveProfile = async () => {
+            const first = document.getElementById('profile-first').value.trim();
+            const last = document.getElementById('profile-last').value.trim();
+            userProfile = { firstName: first, lastName: last };
+            
+            document.getElementById('loader').style.display = 'flex';
+            await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), userProfile);
+            document.getElementById('loader').style.display = 'none';
+            
+            renderGreeting();
+            closeProfileModal();
+        };
+
+        function renderGreeting() {
+            const el = document.getElementById('user-greeting');
+            if (userProfile.firstName) {
+                el.innerText = `Hello ${userProfile.firstName}!`;
+                el.style.display = 'block';
+            } else {
+                el.style.display = 'none';
+            }
+        }
 
         // --- CUSTOM SELECT LOGIC ---
         function initCustomSelects() {
             setupCustomSelect('inv-cat-select');
             setupCustomSelect('groc-cat-select');
-            // Recipe one will be handled on openModal
         }
 
         function setupCustomSelect(containerId) {
@@ -592,19 +753,16 @@
             
             const select = container.querySelector('select');
             
-            // Remove existing custom structure if any (for re-renders)
             const existingSelected = container.querySelector('.select-selected');
             const existingItems = container.querySelector('.select-items');
             if(existingSelected) existingSelected.remove();
             if(existingItems) existingItems.remove();
 
-            // Create Selected Item DIV
             const selectedDiv = document.createElement("div");
             selectedDiv.setAttribute("class", "select-selected");
             selectedDiv.innerHTML = select.options[select.selectedIndex].innerHTML;
             container.appendChild(selectedDiv);
 
-            // Create Options List DIV
             const optionsDiv = document.createElement("div");
             optionsDiv.setAttribute("class", "select-items select-hide");
 
@@ -619,8 +777,7 @@
                     sameAsSelected.forEach(el => el.classList.remove("same-as-selected"));
                     this.setAttribute("class", "same-as-selected");
                     
-                    selectedDiv.click(); // Close dropdown
-                    // Trigger change event manually if needed
+                    selectedDiv.click(); 
                     select.dispatchEvent(new Event('change'));
                 });
                 optionsDiv.appendChild(optionDiv);
@@ -699,6 +856,7 @@
             await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: {} });
             await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: [] });
             await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
+            await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), { firstName: '', lastName: '' }); 
             
             await addDoc(collection(db, "users", currentUser.uid, "recipes"), {
                 title: 'Avocado Toast', category: 'Breakfast', ingredients: 'Bread\nAvocado', instructions: 'Toast bread.', favorite: true, id: Date.now()
@@ -730,6 +888,11 @@
                 await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
             }
 
+            const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile"));
+            if(profSnap.exists()) userProfile = profSnap.data();
+            else userProfile = { firstName: '', lastName: '' };
+
+            renderGreeting();
             renderDashboardFilters();
             renderRecipes();
             renderMealPlan();
@@ -757,8 +920,12 @@
             document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
             document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            const index = tabId === 'dashboard' ? 0 : 1;
-            document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
+            // V.40 Update active tab logic for 3 buttons
+            const tabs = ['dashboard', 'planning', 'substitutions'];
+            const index = tabs.indexOf(tabId);
+            if (index > -1) {
+                document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
+            }
         };
 
         window.openCatManager = () => {
@@ -805,7 +972,6 @@
             input.value = '';
         };
 
-        // V.30 Fixed Delete with Custom Modal
         window.deleteCategory = (index) => {
             window.openConfirmModal("Remove this category?", async () => {
                 appCategories.splice(index, 1);
@@ -1151,44 +1317,13 @@
 
         window.removeManualItem = async (idx) => { manualGrocery.splice(idx, 1); generateGroceryList(); await saveGroceryToCloud(); };
 
-        // V.37 New Ingredient Parser
         function parseIngredient(text) {
             text = text.toLowerCase().trim();
-            
-            // 1. Remove Quantity (numbers, fractions, decimals, ranges)
             text = text.replace(/^[\d\s\/\.\u00BC-\u00BE\u2150-\u215E\-]+/, '').trim();
-
-            // 2. Remove Units (long list)
-            const units = [
-                "cups", "cup", "c",
-                "tablespoons", "tablespoon", "tbsp", "tbs", "t",
-                "teaspoons", "teaspoon", "tsp",
-                "ounces", "ounce", "oz",
-                "pounds", "pound", "lbs", "lb",
-                "grams", "gram", "g",
-                "kilograms", "kilogram", "kg",
-                "milliliters", "milliliter", "ml",
-                "liters", "liter", "l",
-                "pints", "pint", "pt",
-                "quarts", "quart", "qt",
-                "gallons", "gallon", "gal",
-                "dash", "pinch", "handful", "splash",
-                "slices", "slice",
-                "cans", "can",
-                "jars", "jar",
-                "packages", "package", "pkg",
-                "sticks", "stick",
-                "cloves", "clove",
-                "bunches", "bunch",
-                "heads", "head",
-                "stalks", "stalk"
-            ];
-            
+            const units = [ "cups", "cup", "c", "tablespoons", "tablespoon", "tbsp", "tbs", "t", "teaspoons", "teaspoon", "tsp", "ounces", "ounce", "oz", "pounds", "pound", "lbs", "lb", "grams", "gram", "g", "kilograms", "kilogram", "kg", "milliliters", "milliliter", "ml", "liters", "liter", "l", "pints", "pint", "pt", "quarts", "quart", "qt", "gallons", "gallon", "gal", "dash", "pinch", "handful", "splash", "slices", "slice", "cans", "can", "jars", "jar", "packages", "package", "pkg", "sticks", "stick", "cloves", "clove", "bunches", "bunch", "heads", "head", "stalks", "stalk" ];
             const unitPattern = units.sort((a,b) => b.length - a.length).join('|');
             const regex = new RegExp(`^(${unitPattern})\\b\\s*(of\\s+)?`, 'i');
-            
             text = text.replace(regex, '').trim();
-            
             return text;
         }
 
@@ -1197,7 +1332,6 @@
             Object.values(mealPlan).forEach(p => {
                 const r = recipes.find(x => x.id === p.recipeId);
                 if(r) r.ingredients.split('\n').forEach(i => {
-                    // V.37 Use new parser
                     let clean = parseIngredient(i);
                     if(clean) needed.push(clean);
                 });
