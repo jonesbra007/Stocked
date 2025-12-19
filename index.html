@@ -659,29 +659,21 @@
         
         // V.47 Updated Palette - High Contrast
         const PRESET_COLORS = [
-            '#E74C3C', // Red
-            '#E67E22', // Orange
-            '#F1C40F', // Yellow
-            '#2ECC71', // Green
-            '#1ABC9C', // Teal
-            '#3498DB', // Blue
-            '#9B59B6', // Purple
-            '#E91E63', // Pink
-            '#34495E', // Navy/Dark Grey
-            '#A2D729'  // Lime Green
+            '#E74C3C', '#E67E22', '#F1C40F', '#2ECC71', '#1ABC9C', 
+            '#3498DB', '#9B59B6', '#E91E63', '#34495E', '#A2D729'
         ];
         let selectedColor = PRESET_COLORS[0];
 
-        // V.47 Updated Default Categories with new colors
+        // V.47 Updated Default Categories
         let appCategories = [
-            { name: "Italian", color: "#E74C3C" }, // Red
-            { name: "Mexican", color: "#2ECC71" }, // Green
-            { name: "Asian", color: "#E67E22" },   // Orange
-            { name: "American", color: "#3498DB" },// Blue
-            { name: "Healthy", color: "#A2D729" }, // Lime Green
-            { name: "Breakfast", color: "#F1C40F"},// Yellow
-            { name: "Dessert", color: "#E91E63" }, // Pink
-            { name: "Other", color: "#34495E" }    // Navy
+            { name: "Italian", color: "#E74C3C" }, 
+            { name: "Mexican", color: "#2ECC71" }, 
+            { name: "Asian", color: "#E67E22" },   
+            { name: "American", color: "#3498DB" },
+            { name: "Healthy", color: "#A2D729" }, 
+            { name: "Breakfast", color: "#F1C40F"},
+            { name: "Dessert", color: "#E91E63" }, 
+            { name: "Other", color: "#34495E" }    
         ];
         let userProfile = { firstName: '', lastName: '' };
         let isDarkMode = false;
@@ -701,7 +693,6 @@
         let wakeLock = null;
         let confirmCallback = null;
 
-        // Fallback color generator for legacy data or missing colors
         function stringToColor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
@@ -1004,11 +995,10 @@
                         return { name: name, color: match ? match.color : stringToColor(name) };
                     });
                 } else {
-                    // V.47 Fix: If user has old colors, update them to new distinct defaults if names match
                     appCategories = rawCats.map(catObj => {
                          let defaultMatch = appCategories.find(def => def.name === catObj.name);
                          if(defaultMatch && defaultMatch.color !== catObj.color) {
-                             return { name: catObj.name, color: defaultMatch.color }; // Use new default color
+                             return { name: catObj.name, color: defaultMatch.color }; 
                          }
                          return catObj;
                     });
@@ -1295,9 +1285,6 @@
                 let badgesHtml = '<div class="cat-badges">';
                 cats.forEach(c => {
                     const badgeColor = getColorForCategory(c);
-                    // Lighten background, darken text for contrast based on the color could be complex,
-                    // for now using the color as background with white text or dark text.
-                    // Let's use the color as background and white text for high contrast pop
                     badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
                 });
                 badgesHtml += '</div>';
@@ -1504,6 +1491,29 @@
             return text;
         }
 
+        // V.49 Logic for fuzzy matching ingredients
+        function normalizeForMatch(text) {
+            let norm = text.toLowerCase().trim();
+            norm = norm.replace(/[^\w\s]/g, ''); // Remove punctuation
+            norm = norm.replace(/\(.*\)/g, '');  // Remove parenthesis content if any
+
+            const badWords = [
+                'shredded', 'chopped', 'diced', 'minced', 'sliced', 'grated', 'crushed', 'ground', 
+                'whole', 'fresh', 'frozen', 'canned', 'dry', 'dried', 'large', 'medium', 'small', 
+                'organic', 'raw', 'cooked', 'peeled', 'seeded', 'boneless', 'skinless', 'fillet', 'filet',
+                'bunch', 'bunches', 'clove', 'cloves', 'head', 'heads', 'stalk', 'stalks', 'stick', 'sticks',
+                'can', 'cans', 'jar', 'jars', 'pkg', 'package', 'packages'
+            ];
+            const regex = new RegExp(`\\b(${badWords.join('|')})\\b`, 'gi');
+            norm = norm.replace(regex, '').replace(/\s+/g, ' ').trim();
+
+            if (norm.endsWith('oes')) return norm.slice(0, -2);
+            if (norm.endsWith('ies')) return norm.slice(0, -3) + 'y';
+            if (norm.endsWith('s') && !norm.endsWith('ss') && !norm.endsWith('us')) return norm.slice(0, -1);
+            
+            return norm;
+        }
+
         function generateGroceryList() {
             let needed = [];
             Object.values(mealPlan).forEach(p => {
@@ -1514,8 +1524,18 @@
                 });
             });
 
-            const fridge = inventory.filter(i=>i.checked).map(i=>i.name.toLowerCase());
-            const finalNeeded = needed.filter(n => !fridge.includes(n));
+            // Normalize inventory names for checking
+            const fridgeKeys = inventory
+                .filter(i => i.checked)
+                .map(i => normalizeForMatch(i.name));
+
+            // Filter needed items
+            const finalNeeded = needed.filter(n => {
+                const key = normalizeForMatch(n);
+                if(!key) return true; // Keep weird empty items just in case
+                return !fridgeKeys.includes(key);
+            });
+
             const uniqueNeeded = [...new Set(finalNeeded)].map(n => ({
                 name: n.charAt(0).toUpperCase() + n.slice(1),
                 category: detectCategory(n),
