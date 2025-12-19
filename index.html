@@ -13,9 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     
     <style>
-        /* --- CSS VARIABLES (Theming Engine) --- */
         :root {
-            /* Light Theme (Default) */
             --bg-color: #F9F7F2;
             --card-bg: #FFFFFF;
             --nav-bg: rgba(249, 247, 242, 0.95);
@@ -35,12 +33,11 @@
             --scroll-thumb: #c1c1c1;
         }
 
-        /* Dark Theme Overrides */
         [data-theme="dark"] {
             --bg-color: #121212;
             --card-bg: #1E1E1E;
             --nav-bg: rgba(18, 18, 18, 0.95);
-            --primary: #5C8D89; /* Keep brand identity */
+            --primary: #5C8D89;
             --primary-dark: #4A7A76;
             --accent: #E08E70;
             --text-main: #E0E0E0;
@@ -71,7 +68,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Navigation */
         nav {
             background: var(--nav-bg);
             padding: 1rem 2rem;
@@ -95,7 +91,6 @@
         }
         .nav-tabs button.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        /* User Section */
         .nav-right { display: flex; align-items: center; gap: 1rem; position: relative; }
         .user-greeting { font-weight: 600; color: var(--primary); font-size: 0.95rem; display: none; }
         
@@ -135,13 +130,11 @@
         .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
         .btn-sm i { font-size: 0.9rem; }
 
-        /* Custom Inputs */
         input[type="text"], input[type="email"], input[type="password"], textarea {
             padding: 0.8rem 1rem; border: var(--border); border-radius: 8px; background: var(--input-bg); width: 100%; font-family: 'Inter', sans-serif; font-size: 0.95rem; transition: 0.2s; color: var(--text-main);
         }
         input:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.1); }
 
-        /* Custom Select Styles */
         select { display: none; } 
         .custom-select-container { position: relative; width: 170px; font-family: 'Inter', sans-serif; font-size: 0.95rem; }
         .modal .custom-select-container { width: 100%; } 
@@ -170,7 +163,6 @@
         .select-items div:last-child { border-bottom: none; }
         .select-items div:hover, .same-as-selected { background-color: var(--primary); color: #ffffff; }
 
-        /* Filtering & Category Management */
         .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
         .filter-scroll { display: flex; gap: 0.8rem; overflow-x: auto; padding: 0.5rem 0 0.5rem 0; scrollbar-width: none; flex-grow: 1; }
         .filter-scroll::-webkit-scrollbar { display: none; }
@@ -180,7 +172,6 @@
         .btn-manage-cats { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; padding: 8px; transition: 0.2s; border-radius: 50%; }
         .btn-manage-cats:hover { background: var(--hover-bg); color: var(--primary); }
 
-        /* Category List */
         .cat-list { list-style: none; margin-top: 1rem; }
         .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--input-bg); border: var(--border); border-radius: 8px; margin-bottom: 0.5rem; cursor: grab; transition: 0.2s; color: var(--text-main); }
         .cat-item:active { cursor: grabbing; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: scale(1.02); z-index: 10; }
@@ -190,7 +181,6 @@
         .cat-delete { color: var(--text-light); cursor: pointer; padding: 5px; }
         .cat-delete:hover { color: var(--danger); }
 
-        /* Recipe Cards */
         .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; align-items: start; }
         .recipe-card { background: var(--card-bg); border-radius: var(--border-radius); padding: 1.5rem; border: var(--border); box-shadow: var(--shadow); position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; min-height: 260px; overflow: hidden; }
         .recipe-card:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(0,0,0, 0.1); border-color: var(--primary); }
@@ -203,7 +193,10 @@
         .recipe-card.expanded .instruction-preview::after { opacity: 0; }
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
         .recipe-title { font-size: 1.4rem; color: var(--text-main); line-height: 1.2; }
-        .cat-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; color: white; background: #ccc; display: inline-block; margin-bottom: 0.5rem; letter-spacing: 0.5px; }
+        /* V.45 Updated Badge Style for Multi-tags */
+        .cat-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.5rem; }
+        .cat-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; color: white; background: #ccc; display: inline-block; letter-spacing: 0.5px; }
+        
         .fav-btn { background: none; border: none; cursor: pointer; color: #D1D5DB; font-size: 1.2rem; z-index: 2; transition: 0.2s;}
         .fav-btn:hover, .fav-btn.active { color: #f1c40f; }
         .card-actions { display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; border-top: 1px dashed var(--border); padding-top: 1rem; margin-top: auto; }
@@ -256,7 +249,6 @@
         .fab { position: fixed; bottom: 2.5rem; right: 2.5rem; background: var(--primary); color: white; width: 64px; height: 64px; border-radius: 50%; border: none; font-size: 1.5rem; box-shadow: 0 10px 25px rgba(92, 141, 137, 0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 200; transition: all 0.3s ease; }
         .fab:hover { transform: scale(1.1) rotate(90deg); background: var(--primary-dark); }
 
-        /* Substitutions Styles */
         .sub-list { list-style: none; margin-top: 1rem; }
         .sub-list li {
             display: flex; align-items: flex-start; justify-content: space-between;
@@ -267,6 +259,15 @@
         .sub-original { font-weight: 600; color: var(--primary); width: 35%; flex-shrink: 0; }
         .sub-arrow { color: var(--accent); margin: 0 10px; font-size: 0.85rem; padding-top: 3px; }
         .sub-replacement { color: var(--text-main); flex-grow: 1; }
+
+        /* V.45 Tag Input Styles */
+        .tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px; }
+        .tag-pill {
+            padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px;
+            cursor: pointer; font-size: 0.85rem; transition: 0.2s; color: var(--text-main); background: var(--input-bg);
+        }
+        .tag-pill:hover { background: var(--hover-bg); }
+        .tag-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
 
         /* --- Modals --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
@@ -566,12 +567,13 @@
                 <label>Title</label>
                 <input type="text" id="inp-title" placeholder="e.g. Grandma's Lasagna">
             </div>
+            
             <div class="form-group">
-                <label>Cuisine Style</label>
-                <div class="custom-select-container" id="recipe-cat-select-container">
-                    <select id="inp-category"></select>
-                </div>
+                <label>Cuisine Style (Select multiple)</label>
+                <div id="category-tag-container" class="tag-container">
+                    </div>
             </div>
+
             <div class="form-group">
                 <label>Ingredients (one per line)</label>
                 <textarea id="inp-ingredients" rows="4" placeholder="2 Eggs&#10;1 cup Flour"></textarea>
@@ -640,7 +642,6 @@
         let manualGrocery = [];
         let appCategories = ["Italian", "Mexican", "Asian", "American", "Healthy", "Breakfast", "Dessert", "Other"];
         let userProfile = { firstName: '', lastName: '' };
-        // V.39 Dark Mode State
         let isDarkMode = false;
 
         const INVENTORY_CATEGORIES = ["Produce", "Meat & Protein", "Dairy & Fridge", "Pantry & Grains", "Spices & Seasonings", "Other"];
@@ -665,7 +666,6 @@
             return `hsl(${h}, 65%, 60%)`; 
         }
 
-        // --- V.39 DARK MODE LOGIC ---
         function initTheme() {
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'dark') {
@@ -698,7 +698,6 @@
             }
         }
 
-        // Initialize Theme immediately
         initTheme();
 
         onAuthStateChanged(auth, async (user) => {
@@ -839,19 +838,19 @@
             const btn = document.querySelector('#auth-modal button');
             const toggle = document.querySelector('.auth-toggle');
             const error = document.getElementById('auth-error');
-            const nameContainer = document.getElementById('auth-name-container'); // V.42
+            const nameContainer = document.getElementById('auth-name-container');
 
             error.style.display = 'none';
             if(isSignup) { 
                 title.innerText = "Create Account"; 
                 btn.innerText = "Sign Up"; 
                 toggle.innerText = "Already have an account? Log In";
-                nameContainer.style.display = 'flex'; // Show names
+                nameContainer.style.display = 'flex'; 
             } else { 
                 title.innerText = "Welcome to Stocked"; 
                 btn.innerText = "Log In"; 
                 toggle.innerText = "Don't have an account? Sign Up"; 
-                nameContainer.style.display = 'none'; // Hide names
+                nameContainer.style.display = 'none'; 
             }
         };
 
@@ -860,7 +859,6 @@
             const pass = document.getElementById('auth-password').value;
             const errorEl = document.getElementById('auth-error');
             
-            // V.42 Sign Up Validation
             let first = '', last = '';
             if (isSignup) {
                 first = document.getElementById('auth-first').value.trim();
@@ -875,7 +873,7 @@
             try {
                 if(isSignup) {
                     await createUserWithEmailAndPassword(auth, email, pass);
-                    await initNewUserDB(first, last); // Pass names
+                    await initNewUserDB(first, last); 
                 } else {
                     await signInWithEmailAndPassword(auth, email, pass);
                 }
@@ -893,7 +891,6 @@
             else { input.type = "password"; icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
         };
 
-        // V.42 Updated Init to accept names
         async function initNewUserDB(firstName = '', lastName = '') {
             if(!currentUser) return;
             const defaultInv = [{ name: "Salt", category: "Spices & Seasonings", checked: true }, { name: "Garlic", category: "Produce", checked: true }];
@@ -903,7 +900,6 @@
             await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
             await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), { firstName, lastName });
             
-            // Update local state immediately so greeting shows
             userProfile = { firstName, lastName };
             renderGreeting();
 
@@ -918,7 +914,14 @@
             recipes = [];
             const q = query(collection(db, "users", currentUser.uid, "recipes"));
             const querySnapshot = await getDocs(q);
-            querySnapshot.forEach((doc) => { recipes.push({ ...doc.data(), id: doc.id }); });
+            querySnapshot.forEach((doc) => { 
+                // V.45 Convert string category to array if needed
+                let data = doc.data();
+                if (data.category && typeof data.category === 'string') {
+                    data.category = [data.category]; 
+                }
+                recipes.push({ ...data, id: doc.id }); 
+            });
 
             const invSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "inventory"));
             inventory = invSnap.exists() ? invSnap.data().items : [];
@@ -969,7 +972,6 @@
             document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
             document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            // V.40 Update active tab logic for 3 buttons
             const tabs = ['dashboard', 'planning', 'substitutions'];
             const index = tabs.indexOf(tabId);
             if (index > -1) {
@@ -1054,11 +1056,18 @@
             return false;
         }
 
+        // V.45 Updated Save Logic for Multi-Select
         window.saveRecipe = async () => {
             const id = document.getElementById('inp-id').value;
+            
+            // Get selected categories from tag container
+            const selectedTags = Array.from(document.querySelectorAll('#category-tag-container .tag-pill.selected')).map(el => el.innerText);
+            // Default to 'Other' if empty
+            const categories = selectedTags.length > 0 ? selectedTags : ['Other'];
+
             const data = {
                 title: document.getElementById('inp-title').value,
-                category: document.getElementById('inp-category').value,
+                category: categories, // Now an array
                 ingredients: document.getElementById('inp-ingredients').value,
                 instructions: document.getElementById('inp-instructions').value,
             };
@@ -1108,15 +1117,19 @@
             }
         };
 
+        // V.45 Modal Open - Render Tags
         window.openModal = (editId = null) => {
             document.getElementById('recipe-modal').classList.add('open');
-            const select = document.getElementById('inp-category');
-            select.innerHTML = '';
+            const container = document.getElementById('category-tag-container');
+            container.innerHTML = '';
+
+            // Render all available categories as toggleable pills
             appCategories.forEach(cat => {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.innerText = cat;
-                select.appendChild(opt);
+                const pill = document.createElement('div');
+                pill.className = 'tag-pill';
+                pill.innerText = cat;
+                pill.onclick = () => pill.classList.toggle('selected');
+                container.appendChild(pill);
             });
 
             if (editId) {
@@ -1124,20 +1137,23 @@
                 document.getElementById('modal-title').innerText = "Edit Recipe";
                 document.getElementById('inp-id').value = r.id;
                 document.getElementById('inp-title').value = r.title;
-                select.value = r.category || appCategories[0];
+                
+                // Select active tags
+                const activeCats = Array.isArray(r.category) ? r.category : [r.category];
+                Array.from(container.children).forEach(pill => {
+                    if (activeCats.includes(pill.innerText)) pill.classList.add('selected');
+                });
+
                 document.getElementById('inp-ingredients').value = r.ingredients;
                 document.getElementById('inp-instructions').value = r.instructions;
             } else {
                 document.getElementById('modal-title').innerText = "New Recipe";
                 document.getElementById('inp-id').value = '';
                 document.getElementById('inp-title').value = '';
-                select.value = appCategories[0];
+                // Default select first one? or none. Let's do none.
                 document.getElementById('inp-ingredients').value = '';
                 document.getElementById('inp-instructions').value = '';
             }
-            
-            // Re-initialize custom select for the modal
-            setupCustomSelect('recipe-cat-select-container');
         };
         
         window.closeModal = () => document.getElementById('recipe-modal').classList.remove('open');
@@ -1156,12 +1172,19 @@
             });
         }
 
+        // V.45 Multi-Badge Rendering & Filtering
         function renderRecipes() {
             const grid = document.getElementById('recipe-grid');
             grid.innerHTML = '';
             recipes.sort((a, b) => (a.favorite === b.favorite) ? 0 : a.favorite ? -1 : 1);
             
-            const filtered = currentDashboardFilter === "All" ? recipes : recipes.filter(r => r.category === currentDashboardFilter);
+            const filtered = currentDashboardFilter === "All" 
+                ? recipes 
+                : recipes.filter(r => {
+                    // Check if current filter is IN the array of categories
+                    const cats = Array.isArray(r.category) ? r.category : [r.category];
+                    return cats.includes(currentDashboardFilter);
+                });
             
             if (recipes.length === 0) {
                  grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color:var(--text-light);">
@@ -1176,16 +1199,24 @@
             }
 
             filtered.forEach(r => {
-                if(!r.category) r.category = 'Other';
+                const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
                 const card = document.createElement('div');
                 card.className = 'recipe-card draggable';
                 card.draggable = true;
                 card.ondragstart = (e) => drag(e, r.id);
-                const badgeColor = stringToColor(r.category);
+                
+                // Build badges HTML
+                let badgesHtml = '<div class="cat-badges">';
+                cats.forEach(c => {
+                    const badgeColor = stringToColor(c);
+                    badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor};">${c}</div>`;
+                });
+                badgesHtml += '</div>';
+
                 card.innerHTML = `
                     <div class="card-header">
                         <div style="flex-grow:1;">
-                            <div class="cat-badge" style="background-color: ${badgeColor};">${r.category}</div>
+                            ${badgesHtml}
                             <div class="recipe-title">${r.title}</div>
                         </div>
                         <button class="fav-btn ${r.favorite ? 'active' : ''}" onclick="toggleFav('${r.id}')"><i class="${r.favorite ? 'fas' : 'far'} fa-star"></i></button>
@@ -1261,7 +1292,14 @@
             const list = document.getElementById('picker-list');
             list.innerHTML = '';
             if(recipes.length === 0) { list.innerHTML = '<li style="padding:1rem; color:#777;">Add recipes to dashboard first.</li>'; return; }
-            const filtered = currentPickerFilter === "All" ? recipes : recipes.filter(r => r.category === currentPickerFilter);
+            
+            const filtered = currentPickerFilter === "All" 
+                ? recipes 
+                : recipes.filter(r => {
+                    const cats = Array.isArray(r.category) ? r.category : [r.category];
+                    return cats.includes(currentPickerFilter);
+                });
+
             if(filtered.length === 0) { list.innerHTML = '<li style="padding:1rem; color:#777;">No matching recipes found.</li>'; return; }
             filtered.forEach(r => {
                const li = document.createElement('li');
@@ -1303,7 +1341,9 @@
                 const slot = document.querySelector(`.meal-slot[data-day="${plan.day}"][data-type="${plan.type}"]`);
                 if (recipe && slot) {
                     slot.onclick = null; 
-                    const color = stringToColor(recipe.category);
+                    // Use first category for color in planner
+                    const firstCat = Array.isArray(recipe.category) ? recipe.category[0] : recipe.category;
+                    const color = stringToColor(firstCat || 'Other');
                     slot.innerHTML = `
                         <div class="planned-meal" style="border-left-color: ${color}">
                             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${recipe.title}</span>
@@ -1366,44 +1406,13 @@
 
         window.removeManualItem = async (idx) => { manualGrocery.splice(idx, 1); generateGroceryList(); await saveGroceryToCloud(); };
 
-        // V.37 New Ingredient Parser
         function parseIngredient(text) {
             text = text.toLowerCase().trim();
-            
-            // 1. Remove Quantity (numbers, fractions, decimals, ranges)
             text = text.replace(/^[\d\s\/\.\u00BC-\u00BE\u2150-\u215E\-]+/, '').trim();
-
-            // 2. Remove Units (long list)
-            const units = [
-                "cups", "cup", "c",
-                "tablespoons", "tablespoon", "tbsp", "tbs", "t",
-                "teaspoons", "teaspoon", "tsp",
-                "ounces", "ounce", "oz",
-                "pounds", "pound", "lbs", "lb",
-                "grams", "gram", "g",
-                "kilograms", "kilogram", "kg",
-                "milliliters", "milliliter", "ml",
-                "liters", "liter", "l",
-                "pints", "pint", "pt",
-                "quarts", "quart", "qt",
-                "gallons", "gallon", "gal",
-                "dash", "pinch", "handful", "splash",
-                "slices", "slice",
-                "cans", "can",
-                "jars", "jar",
-                "packages", "package", "pkg",
-                "sticks", "stick",
-                "cloves", "clove",
-                "bunches", "bunch",
-                "heads", "head",
-                "stalks", "stalk"
-            ];
-            
+            const units = [ "cups", "cup", "c", "tablespoons", "tablespoon", "tbsp", "tbs", "t", "teaspoons", "teaspoon", "tsp", "ounces", "ounce", "oz", "pounds", "pound", "lbs", "lb", "grams", "gram", "g", "kilograms", "kilogram", "kg", "milliliters", "milliliter", "ml", "liters", "liter", "l", "pints", "pint", "pt", "quarts", "quart", "qt", "gallons", "gallon", "gal", "dash", "pinch", "handful", "splash", "slices", "slice", "cans", "can", "jars", "jar", "packages", "package", "pkg", "sticks", "stick", "cloves", "clove", "bunches", "bunch", "heads", "head", "stalks", "stalk" ];
             const unitPattern = units.sort((a,b) => b.length - a.length).join('|');
             const regex = new RegExp(`^(${unitPattern})\\b\\s*(of\\s+)?`, 'i');
-            
             text = text.replace(regex, '').trim();
-            
             return text;
         }
 
@@ -1412,7 +1421,6 @@
             Object.values(mealPlan).forEach(p => {
                 const r = recipes.find(x => x.id === p.recipeId);
                 if(r) r.ingredients.split('\n').forEach(i => {
-                    // V.37 Use new parser
                     let clean = parseIngredient(i);
                     if(clean) needed.push(clean);
                 });
