@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stocked | Meal Planner</title>
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 448 512'%3E%3Cpath fill='%235C8D89' d='M416 0C352.3 0 296.7 40.8 276.5 100.9l-11.2 33.3c-2.3 6.9-3.3 14.1-3.3 21.3V320c0 17.7-14.3 32-32 32s-32-14.3-32-32V25.2c0-11-6.2-21-16-25.9s-21.2-2.8-29.3 5.3l-109 109C15.3 142.1 0 182.2 0 224v96c0 17.7 14.3 32 32 32s32-14.3 32-32V224c0-23.7 8.7-46.5 24.3-63.5l30.2-32.9V320c0 53 43 96 96 96h32v64c0 17.7 14.3 32 32 32s32-14.3 32-32V416h32c53 0 96-43 96-96V96c0-53-43-96-96-96z'/%3E%3C/svg%3E">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -487,6 +490,17 @@
             <h2 id="auth-title" class="auth-title">Welcome to Stocked</h2>
             <p style="color:var(--text-light); margin-bottom:1.5rem;">Login to save your recipes and plans.</p>
             <div id="auth-error"></div>
+            <div id="auth-name-container" style="display:none; gap:10px; margin-bottom:1.2rem;">
+                 <div style="flex:1;">
+                     <label style="display:block; margin-bottom:0.6rem; font-weight:600; font-size:0.85rem; text-transform:uppercase; color:var(--text-light); letter-spacing:0.5px;">First Name</label>
+                     <input type="text" id="auth-first" placeholder="Jane" style="width:100%;">
+                 </div>
+                 <div style="flex:1;">
+                     <label style="display:block; margin-bottom:0.6rem; font-weight:600; font-size:0.85rem; text-transform:uppercase; color:var(--text-light); letter-spacing:0.5px;">Last Name</label>
+                     <input type="text" id="auth-last" placeholder="Doe" style="width:100%;">
+                 </div>
+            </div>
+
             <div class="form-group">
                 <label>Email</label>
                 <input type="email" id="auth-email" placeholder="you@example.com">
@@ -825,19 +839,43 @@
             const btn = document.querySelector('#auth-modal button');
             const toggle = document.querySelector('.auth-toggle');
             const error = document.getElementById('auth-error');
+            const nameContainer = document.getElementById('auth-name-container'); // V.42
+
             error.style.display = 'none';
-            if(isSignup) { title.innerText = "Create Account"; btn.innerText = "Sign Up"; toggle.innerText = "Already have an account? Log In"; } 
-            else { title.innerText = "Welcome to Stocked"; btn.innerText = "Log In"; toggle.innerText = "Don't have an account? Sign Up"; }
+            if(isSignup) { 
+                title.innerText = "Create Account"; 
+                btn.innerText = "Sign Up"; 
+                toggle.innerText = "Already have an account? Log In";
+                nameContainer.style.display = 'flex'; // Show names
+            } else { 
+                title.innerText = "Welcome to Stocked"; 
+                btn.innerText = "Log In"; 
+                toggle.innerText = "Don't have an account? Sign Up"; 
+                nameContainer.style.display = 'none'; // Hide names
+            }
         };
 
         window.handleAuth = async () => {
             const email = document.getElementById('auth-email').value;
             const pass = document.getElementById('auth-password').value;
             const errorEl = document.getElementById('auth-error');
+            
+            // V.42 Sign Up Validation
+            let first = '', last = '';
+            if (isSignup) {
+                first = document.getElementById('auth-first').value.trim();
+                last = document.getElementById('auth-last').value.trim();
+                if (!first || !last) {
+                    errorEl.innerText = "Please enter your full name.";
+                    errorEl.style.display = 'block';
+                    return;
+                }
+            }
+
             try {
                 if(isSignup) {
                     await createUserWithEmailAndPassword(auth, email, pass);
-                    await initNewUserDB();
+                    await initNewUserDB(first, last); // Pass names
                 } else {
                     await signInWithEmailAndPassword(auth, email, pass);
                 }
@@ -855,15 +893,20 @@
             else { input.type = "password"; icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
         };
 
-        async function initNewUserDB() {
+        // V.42 Updated Init to accept names
+        async function initNewUserDB(firstName = '', lastName = '') {
             if(!currentUser) return;
             const defaultInv = [{ name: "Salt", category: "Spices & Seasonings", checked: true }, { name: "Garlic", category: "Produce", checked: true }];
             await setDoc(doc(db, "users", currentUser.uid, "data", "inventory"), { items: defaultInv });
             await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: {} });
             await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: [] });
             await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
-            await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), { firstName: '', lastName: '' }); 
+            await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), { firstName, lastName });
             
+            // Update local state immediately so greeting shows
+            userProfile = { firstName, lastName };
+            renderGreeting();
+
             await addDoc(collection(db, "users", currentUser.uid, "recipes"), {
                 title: 'Avocado Toast', category: 'Breakfast', ingredients: 'Bread\nAvocado', instructions: 'Toast bread.', favorite: true, id: Date.now()
             });
@@ -1323,13 +1366,44 @@
 
         window.removeManualItem = async (idx) => { manualGrocery.splice(idx, 1); generateGroceryList(); await saveGroceryToCloud(); };
 
+        // V.37 New Ingredient Parser
         function parseIngredient(text) {
             text = text.toLowerCase().trim();
+            
+            // 1. Remove Quantity (numbers, fractions, decimals, ranges)
             text = text.replace(/^[\d\s\/\.\u00BC-\u00BE\u2150-\u215E\-]+/, '').trim();
-            const units = [ "cups", "cup", "c", "tablespoons", "tablespoon", "tbsp", "tbs", "t", "teaspoons", "teaspoon", "tsp", "ounces", "ounce", "oz", "pounds", "pound", "lbs", "lb", "grams", "gram", "g", "kilograms", "kilogram", "kg", "milliliters", "milliliter", "ml", "liters", "liter", "l", "pints", "pint", "pt", "quarts", "quart", "qt", "gallons", "gallon", "gal", "dash", "pinch", "handful", "splash", "slices", "slice", "cans", "can", "jars", "jar", "packages", "package", "pkg", "sticks", "stick", "cloves", "clove", "bunches", "bunch", "heads", "head", "stalks", "stalk" ];
+
+            // 2. Remove Units (long list)
+            const units = [
+                "cups", "cup", "c",
+                "tablespoons", "tablespoon", "tbsp", "tbs", "t",
+                "teaspoons", "teaspoon", "tsp",
+                "ounces", "ounce", "oz",
+                "pounds", "pound", "lbs", "lb",
+                "grams", "gram", "g",
+                "kilograms", "kilogram", "kg",
+                "milliliters", "milliliter", "ml",
+                "liters", "liter", "l",
+                "pints", "pint", "pt",
+                "quarts", "quart", "qt",
+                "gallons", "gallon", "gal",
+                "dash", "pinch", "handful", "splash",
+                "slices", "slice",
+                "cans", "can",
+                "jars", "jar",
+                "packages", "package", "pkg",
+                "sticks", "stick",
+                "cloves", "clove",
+                "bunches", "bunch",
+                "heads", "head",
+                "stalks", "stalk"
+            ];
+            
             const unitPattern = units.sort((a,b) => b.length - a.length).join('|');
             const regex = new RegExp(`^(${unitPattern})\\b\\s*(of\\s+)?`, 'i');
+            
             text = text.replace(regex, '').trim();
+            
             return text;
         }
 
@@ -1338,6 +1412,7 @@
             Object.values(mealPlan).forEach(p => {
                 const r = recipes.find(x => x.id === p.recipeId);
                 if(r) r.ingredients.split('\n').forEach(i => {
+                    // V.37 Use new parser
                     let clean = parseIngredient(i);
                     if(clean) needed.push(clean);
                 });
