@@ -307,6 +307,16 @@
         .friend-name { font-weight: 600; color: var(--text-main); }
         .friend-email { font-size: 0.8rem; color: var(--text-light); }
 
+        /* V.53 Toast Styles */
+        .toast {
+            visibility: hidden; min-width: 250px; margin-left: -125px;
+            background-color: var(--primary); color: #fff; text-align: center;
+            border-radius: 50px; padding: 16px; position: fixed; z-index: 3000;
+            left: 50%; bottom: 30px; font-size: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            opacity: 0; transition: opacity 0.3s, bottom 0.3s; font-weight: 500;
+        }
+        .toast.show { visibility: visible; opacity: 1; bottom: 50px; }
+
         /* --- Modals --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal-overlay.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -362,6 +372,7 @@
 <body>
 
     <div id="loader"><i class="fas fa-spinner fa-spin"></i></div>
+    <div id="toast" class="toast">Action Successful</div>
 
     <nav>
         <div class="nav-brand"><i class="fas fa-utensils"></i> Stocked</div>
@@ -769,6 +780,14 @@
         let wakeLock = null;
         let confirmCallback = null;
 
+        // V.53 Helper for Toasts
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.innerText = message;
+            toast.className = 'toast show';
+            setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
+        }
+
         function stringToColor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
@@ -1062,6 +1081,7 @@
             document.getElementById('loader').style.display = 'none';
         }
 
+        // V.53 Instant Local Update + Toast Notification
         window.copyFriendRecipe = async (rData) => {
             const data = {
                 title: rData.title,
@@ -1072,9 +1092,18 @@
             };
             document.getElementById('loader').style.display = 'flex';
             const docRef = await addDoc(collection(db, "users", currentUser.uid, "recipes"), data);
-            recipes.push({ ...data, id: docRef.id });
+            
+            // Push to local state immediately
+            const newRecipe = { ...data, id: docRef.id };
+            recipes.push(newRecipe);
+            
+            // Force re-render of dashboard in background
+            if(currentDashboardFilter === 'All' || (Array.isArray(newRecipe.category) ? newRecipe.category.includes(currentDashboardFilter) : newRecipe.category === currentDashboardFilter)) {
+                 renderRecipes();
+            }
+
             document.getElementById('loader').style.display = 'none';
-            alert("Recipe saved to your dashboard!");
+            showToast("Recipe saved to your dashboard!");
         };
 
         // -------------------------
@@ -1757,11 +1786,10 @@
             return text;
         }
 
-        // V.49 Logic for fuzzy matching ingredients
         function normalizeForMatch(text) {
             let norm = text.toLowerCase().trim();
-            norm = norm.replace(/[^\w\s]/g, ''); // Remove punctuation
-            norm = norm.replace(/\(.*\)/g, '');  // Remove parenthesis content if any
+            norm = norm.replace(/[^\w\s]/g, ''); 
+            norm = norm.replace(/\(.*\)/g, ''); 
 
             const badWords = [
                 'shredded', 'chopped', 'diced', 'minced', 'sliced', 'grated', 'crushed', 'ground', 
@@ -1790,15 +1818,13 @@
                 });
             });
 
-            // Normalize inventory names for checking
             const fridgeKeys = inventory
                 .filter(i => i.checked)
                 .map(i => normalizeForMatch(i.name));
 
-            // Filter needed items
             const finalNeeded = needed.filter(n => {
                 const key = normalizeForMatch(n);
-                if(!key) return true; // Keep weird empty items just in case
+                if(!key) return true; 
                 return !fridgeKeys.includes(key);
             });
 
