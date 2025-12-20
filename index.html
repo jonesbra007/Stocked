@@ -151,7 +151,6 @@
             50% { transform: scale(1.2); opacity: 0.7; }
             100% { transform: scale(1); opacity: 1; }
         }
-        /* Fix for textarea positioning */
         .input-wrapper textarea { padding-right: 40px; }
         .input-wrapper input { padding-right: 40px; }
 
@@ -297,6 +296,15 @@
         .tag-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
         .tag-color-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 
+        /* Friend Styles */
+        .friend-list { list-style: none; margin-top: 1rem; }
+        .friend-item { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); padding: 1rem; border-radius: 8px; border: var(--border); margin-bottom: 0.5rem; cursor: pointer; transition: 0.2s; }
+        .friend-item:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--primary); }
+        .friend-avatar { width: 32px; height: 32px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; }
+        .friend-info { flex-grow: 1; }
+        .friend-name { font-weight: 600; color: var(--text-main); }
+        .friend-email { font-size: 0.8rem; color: var(--text-light); }
+
         /* --- Modals --- */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal-overlay.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -359,6 +367,7 @@
             <div class="nav-tabs">
                 <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
                 <button onclick="switchTab('planning')">Planner</button>
+                <button onclick="switchTab('friends')">Friends</button>
                 <button onclick="switchTab('substitutions')">Conversions</button>
             </div>
         </div>
@@ -395,6 +404,24 @@
             
             <div id="recipe-grid" class="recipe-grid"></div>
             <button class="fab" onclick="openModal()"><i class="fas fa-plus"></i></button>
+        </section>
+
+        <section id="friends" class="page-section">
+            <br>
+            <div class="header-row">
+                <h2>Friends</h2>
+                <button class="btn-sm" onclick="openAddFriendModal()"><i class="fas fa-user-plus"></i> Add Friend</button>
+            </div>
+            <div id="friends-list-container"></div>
+        </section>
+
+        <section id="friend-cookbook" class="page-section">
+            <br>
+            <div class="header-row">
+                <h2 id="friend-cookbook-title">Friend's Cookbook</h2>
+                <button class="btn-sm" onclick="switchTab('friends')"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+            <div id="friend-recipe-grid" class="recipe-grid"></div>
         </section>
 
         <section id="planning" class="page-section">
@@ -507,6 +534,21 @@
         </section>
     </div>
 
+    <div id="add-friend-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <h2>Add Friend</h2>
+                <button class="modal-close-btn" onclick="closeAddFriendModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <p style="color:var(--text-light); margin-bottom:1rem; font-size:0.9rem;">Enter your friend's email address to add them. They must have saved their profile at least once.</p>
+            <div class="inventory-add-row" style="margin-bottom: 1rem;">
+                <input type="email" id="friend-email-input" placeholder="friend@example.com">
+                <button onclick="addFriend()"><i class="fas fa-user-plus"></i></button>
+            </div>
+            <div id="add-friend-msg"></div>
+        </div>
+    </div>
+
     <div id="confirm-modal" class="modal-overlay">
         <div class="modal" style="max-width: 400px; text-align: center;">
             <h2 class="confirm-title" style="margin-bottom: 1rem; color: var(--danger);">Are you sure?</h2>
@@ -565,7 +607,7 @@
                 <input type="text" id="profile-last" placeholder="e.g. Smith">
             </div>
             <div class="modal-actions">
-                <button class="primary" onclick="saveProfile()">Save Changes</button>
+                <button class="primary" onclick="saveProfile()">Save & Make Discoverable</button>
             </div>
         </div>
     </div>
@@ -685,15 +727,14 @@
         let mealPlan = {};
         let inventory = [];
         let manualGrocery = [];
+        let friends = []; // Local list of friends
         
-        // V.47 Updated Palette - High Contrast
         const PRESET_COLORS = [
             '#E74C3C', '#E67E22', '#F1C40F', '#2ECC71', '#1ABC9C', 
             '#3498DB', '#9B59B6', '#E91E63', '#34495E', '#A2D729'
         ];
         let selectedColor = PRESET_COLORS[0];
 
-        // V.47 Updated Default Categories
         let appCategories = [
             { name: "Italian", color: "#E74C3C" }, 
             { name: "Mexican", color: "#2ECC71" }, 
@@ -782,7 +823,7 @@
             }
         });
 
-        // --- V.50 Voice Dictation Logic ---
+        // --- Voice Dictation ---
         let recognition = null;
         let activeInputId = null;
         let activeMicBtn = null;
@@ -808,7 +849,6 @@
                 const transcript = event.results[0][0].transcript;
                 if(activeInputId) {
                     const input = document.getElementById(activeInputId);
-                    // Append text with a space if not empty
                     if(input.value.length > 0) input.value += ' ' + transcript;
                     else input.value = transcript;
                 }
@@ -828,7 +868,6 @@
                 recognition.start();
             }
         };
-        // ----------------------------------
 
         function initColorPicker() {
             const container = document.getElementById('color-picker-container');
@@ -866,6 +905,7 @@
         };
         window.closeProfileModal = () => document.getElementById('profile-modal').classList.remove('open');
 
+        // V.51 Updated Save Profile to create Public Lookup
         window.saveProfile = async () => {
             const first = document.getElementById('profile-first').value.trim();
             const last = document.getElementById('profile-last').value.trim();
@@ -873,8 +913,18 @@
             
             document.getElementById('loader').style.display = 'flex';
             await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), userProfile);
-            document.getElementById('loader').style.display = 'none';
             
+            // Create Public Profile for Friend Finding
+            // Note: In Firestore keys can't contain '.', so we replace with ',' or simple encode
+            const safeEmail = currentUser.email.replace(/\./g, ',');
+            await setDoc(doc(db, "public_profiles", safeEmail), {
+                uid: currentUser.uid,
+                firstName: first,
+                lastName: last,
+                email: currentUser.email
+            });
+
+            document.getElementById('loader').style.display = 'none';
             renderGreeting();
             closeProfileModal();
         };
@@ -889,7 +939,144 @@
             }
         }
 
-        // --- CUSTOM SELECT LOGIC ---
+        // --- V.51 Friend Logic ---
+        
+        window.openAddFriendModal = () => {
+            document.getElementById('add-friend-modal').classList.add('open');
+            document.getElementById('add-friend-msg').innerText = '';
+            document.getElementById('friend-email-input').value = '';
+        };
+        window.closeAddFriendModal = () => document.getElementById('add-friend-modal').classList.remove('open');
+
+        window.addFriend = async () => {
+            const email = document.getElementById('friend-email-input').value.trim().toLowerCase();
+            const msg = document.getElementById('add-friend-msg');
+            if(!email) return;
+            if(email === currentUser.email) { msg.innerText = "You can't add yourself!"; return; }
+
+            document.getElementById('loader').style.display = 'flex';
+            const safeEmail = email.replace(/\./g, ',');
+            
+            try {
+                const docSnap = await getDoc(doc(db, "public_profiles", safeEmail));
+                if (docSnap.exists()) {
+                    const friendData = docSnap.data();
+                    // Check if already added
+                    if(friends.some(f => f.uid === friendData.uid)) {
+                        msg.innerText = "Already in your friends list.";
+                    } else {
+                        friends.push(friendData);
+                        await setDoc(doc(db, "users", currentUser.uid, "data", "friends"), { list: friends });
+                        renderFriendsList();
+                        closeAddFriendModal();
+                    }
+                } else {
+                    msg.innerHTML = `<span style="color:var(--danger)">User not found.</span><br>Ask them to update their profile to be discoverable.`;
+                }
+            } catch (error) {
+                console.error(error);
+                msg.innerText = "Error searching. Check your connection.";
+            }
+            document.getElementById('loader').style.display = 'none';
+        };
+
+        function renderFriendsList() {
+            const container = document.getElementById('friends-list-container');
+            container.innerHTML = '';
+            if(friends.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-light)">No friends added yet.</div>';
+                return;
+            }
+            friends.forEach(f => {
+                const initial = f.firstName ? f.firstName.charAt(0).toUpperCase() : '?';
+                const item = document.createElement('div');
+                item.className = 'friend-item';
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center;">
+                        <div class="friend-avatar">${initial}</div>
+                        <div class="friend-info">
+                            <div class="friend-name">${f.firstName} ${f.lastName}</div>
+                            <div class="friend-email">${f.email}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:var(--text-light)"></i>
+                `;
+                item.onclick = () => loadFriendCookbook(f);
+                container.appendChild(item);
+            });
+        }
+
+        async function loadFriendCookbook(friend) {
+            document.getElementById('loader').style.display = 'flex';
+            const grid = document.getElementById('friend-recipe-grid');
+            grid.innerHTML = '';
+            document.getElementById('friend-cookbook-title').innerText = `${friend.firstName}'s Cookbook`;
+            
+            try {
+                const q = query(collection(db, "users", friend.uid, "recipes"));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-light)">No recipes found.</div>';
+                } else {
+                    querySnapshot.forEach((doc) => {
+                        const r = doc.data();
+                        const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
+                        
+                        // Render Card (Simplified for viewing)
+                        const card = document.createElement('div');
+                        card.className = 'recipe-card';
+                        
+                        let badgesHtml = '<div class="cat-badges">';
+                        cats.forEach(c => {
+                            const badgeColor = getColorForCategory(c);
+                            badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
+                        });
+                        badgesHtml += '</div>';
+
+                        card.innerHTML = `
+                            <div class="card-header">
+                                <div style="flex-grow:1;">
+                                    ${badgesHtml}
+                                    <div class="recipe-title">${r.title}</div>
+                                </div>
+                            </div>
+                            <div class="clickable-area">
+                                <div class="recipe-details"><h4>Ingredients</h4><ul class="ingredient-list">${r.ingredients.split('\n').map(i=>`<li>${i}</li>`).join('')}</ul></div>
+                                <div class="recipe-details" style="flex-grow: 1;"><h4>Instructions</h4><div class="instruction-preview">${r.instructions}</div></div>
+                            </div>
+                            <div class="card-actions">
+                                 <button class="primary" style="width:100%; font-size:0.9rem;" onclick='copyFriendRecipe(${JSON.stringify(r).replace(/'/g, "&#39;")})'><i class="fas fa-download"></i> Save to My Books</button>
+                            </div>
+                        `;
+                        grid.appendChild(card);
+                    });
+                }
+                switchTab('friend-cookbook');
+            } catch (error) {
+                console.error(error);
+                alert("Could not load recipes. Make sure your friend has updated their privacy settings (Security Rules).");
+            }
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        window.copyFriendRecipe = async (rData) => {
+            const data = {
+                title: rData.title,
+                category: rData.category,
+                ingredients: rData.ingredients,
+                instructions: rData.instructions,
+                favorite: false
+            };
+            document.getElementById('loader').style.display = 'flex';
+            const docRef = await addDoc(collection(db, "users", currentUser.uid, "recipes"), data);
+            recipes.push({ ...data, id: docRef.id });
+            document.getElementById('loader').style.display = 'none';
+            alert("Recipe saved to your dashboard!");
+        };
+
+        // -------------------------
+
         function initCustomSelects() {
             setupCustomSelect('inv-cat-select');
             setupCustomSelect('groc-cat-select');
@@ -900,7 +1087,6 @@
             if(!container) return;
             
             const select = container.querySelector('select');
-            
             const existingSelected = container.querySelector('.select-selected');
             const existingItems = container.querySelector('.select-items');
             if(existingSelected) existingSelected.remove();
@@ -958,8 +1144,6 @@
             }
         }
         document.addEventListener("click", closeAllSelect);
-
-        // -------------------------
 
         window.toggleAuthMode = () => {
             isSignup = !isSignup;
@@ -1026,12 +1210,9 @@
             await setDoc(doc(db, "users", currentUser.uid, "data", "inventory"), { items: defaultInv });
             await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: {} });
             await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: [] });
-            // Save initial categories with colors
             await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
-            await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), { firstName, lastName });
-            
-            userProfile = { firstName, lastName };
-            renderGreeting();
+            // This calls the full save profile which handles the public index creation
+            await saveProfile(); 
 
             await addDoc(collection(db, "users", currentUser.uid, "recipes"), {
                 title: 'Avocado Toast', category: ['Breakfast'], ingredients: 'Bread\nAvocado', instructions: 'Toast bread.', favorite: true, id: Date.now()
@@ -1061,13 +1242,15 @@
             const grocSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "grocery"));
             manualGrocery = grocSnap.exists() ? grocSnap.data().items : [];
 
+            // Load Friends List
+            const friendsSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "friends"));
+            friends = friendsSnap.exists() ? friendsSnap.data().list : [];
+
             const setSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "settings"));
             if(setSnap.exists() && setSnap.data().categories) {
                 let rawCats = setSnap.data().categories;
-                // --- MIGRATION: Convert old string array to object array if needed ---
                 if (rawCats.length > 0 && typeof rawCats[0] === 'string') {
                     appCategories = rawCats.map(name => {
-                        // try to match default color
                         let match = appCategories.find(def => def.name === name);
                         return { name: name, color: match ? match.color : stringToColor(name) };
                     });
@@ -1093,6 +1276,7 @@
             renderRecipes();
             renderMealPlan();
             renderInventory();
+            renderFriendsList();
             generateGroceryList();
             document.getElementById('loader').style.display = 'none';
         }
@@ -1116,7 +1300,7 @@
             document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
             document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            const tabs = ['dashboard', 'planning', 'substitutions'];
+            const tabs = ['dashboard', 'planning', 'friends', 'substitutions'];
             const index = tabs.indexOf(tabId);
             if (index > -1) {
                 document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
@@ -1126,7 +1310,6 @@
         window.openCatManager = () => {
             renderCatManagerList();
             document.getElementById('cat-manager-modal').classList.add('open');
-            // reset picker selection
             selectedColor = PRESET_COLORS[0];
             initColorPicker();
         };
@@ -1161,10 +1344,7 @@
             const val = input.value.trim();
             if(!val) return;
             const clean = val.charAt(0).toUpperCase() + val.slice(1);
-            
-            // Check existence based on name property
             if(!appCategories.some(c => c.name === clean)) {
-                // PUSH OBJECT INSTEAD OF STRING
                 appCategories.push({ name: clean, color: selectedColor });
                 await saveSettingsToCloud();
                 renderCatManagerList();
@@ -1208,8 +1388,6 @@
 
         window.saveRecipe = async () => {
             const id = document.getElementById('inp-id').value;
-            
-            // Get selected categories from tag container
             const selectedTags = Array.from(document.querySelectorAll('#category-tag-container .tag-pill.selected')).map(el => el.dataset.name);
             const categories = selectedTags.length > 0 ? selectedTags : ['Other'];
 
@@ -1270,12 +1448,10 @@
             const container = document.getElementById('category-tag-container');
             container.innerHTML = '';
 
-            // Render all available categories
             appCategories.forEach(catObj => {
                 const pill = document.createElement('div');
                 pill.className = 'tag-pill';
-                pill.dataset.name = catObj.name; // Store name
-                // Add tiny color dot in the pill
+                pill.dataset.name = catObj.name; 
                 pill.innerHTML = `<span class="tag-color-dot" style="background:${catObj.color}"></span> ${catObj.name}`;
                 pill.onclick = () => pill.classList.toggle('selected');
                 container.appendChild(pill);
@@ -1309,7 +1485,6 @@
         function renderDashboardFilters() {
             const container = document.getElementById('dashboard-filters');
             container.innerHTML = '';
-            // Just use names for filters
             const displayCats = ["All", ...appCategories.map(c => c.name)];
             
             displayCats.forEach(catName => {
@@ -1321,7 +1496,6 @@
             });
         }
 
-        // Helper to get color for a category name
         function getColorForCategory(catName) {
             const found = appCategories.find(c => c.name === catName);
             return found ? found.color : stringToColor(catName);
@@ -1358,7 +1532,6 @@
                 card.draggable = true;
                 card.ondragstart = (e) => drag(e, r.id);
                 
-                // Build badges with Assigned Colors
                 let badgesHtml = '<div class="cat-badges">';
                 cats.forEach(c => {
                     const badgeColor = getColorForCategory(c);
