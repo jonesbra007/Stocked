@@ -91,14 +91,16 @@
         }
         .nav-tabs button.active { background: var(--card-bg); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        .nav-right { display: flex; align-items: center; gap: 1rem; position: relative; }
-        .user-greeting { font-weight: 600; color: var(--primary); font-size: 0.95rem; display: none; }
+        .nav-right { display: flex; align-items: center; gap: 0.5rem; position: relative; }
+        .user-greeting { font-weight: 600; color: var(--primary); font-size: 0.95rem; display: none; margin-right: 1rem; }
         
-        .settings-btn { 
+        /* Unified Nav Icon Button Style */
+        .nav-icon-btn { 
             background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1.2rem; 
-            transition: 0.2s; padding: 8px; border-radius: 50%; 
+            transition: 0.2s; padding: 8px; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
         }
-        .settings-btn:hover { color: var(--primary); background: var(--hover-bg); }
+        .nav-icon-btn:hover { color: var(--primary); background: var(--hover-bg); }
+        .nav-icon-btn.active { color: var(--primary); background: var(--hover-bg); box-shadow: inset 0 0 0 1px var(--primary); }
         
         .settings-dropdown {
             position: absolute; top: 120%; right: 0;
@@ -367,15 +369,19 @@
             <div class="nav-tabs">
                 <button class="active" onclick="switchTab('dashboard')">Dashboard</button>
                 <button onclick="switchTab('planning')">Planner</button>
-                <button onclick="switchTab('friends')">Friends</button>
                 <button onclick="switchTab('substitutions')">Conversions</button>
             </div>
         </div>
         
         <div class="nav-right" id="user-section" style="display:none;">
             <span class="user-greeting" id="user-greeting"></span>
+            
+            <button class="nav-icon-btn" id="btn-friends-nav" onclick="switchTab('friends')" title="Friends">
+                <i class="fas fa-user-friends"></i>
+            </button>
+
             <div style="position:relative;">
-                <button class="settings-btn" onclick="toggleSettingsMenu()">
+                <button class="nav-icon-btn settings-btn" onclick="toggleSettingsMenu()">
                     <i class="fas fa-cog"></i>
                 </button>
                 <div id="settings-dropdown" class="settings-dropdown">
@@ -727,7 +733,7 @@
         let mealPlan = {};
         let inventory = [];
         let manualGrocery = [];
-        let friends = []; // Local list of friends
+        let friends = []; 
         
         const PRESET_COLORS = [
             '#E74C3C', '#E67E22', '#F1C40F', '#2ECC71', '#1ABC9C', 
@@ -905,7 +911,6 @@
         };
         window.closeProfileModal = () => document.getElementById('profile-modal').classList.remove('open');
 
-        // V.51 Updated Save Profile to create Public Lookup
         window.saveProfile = async () => {
             const first = document.getElementById('profile-first').value.trim();
             const last = document.getElementById('profile-last').value.trim();
@@ -915,7 +920,6 @@
             await setDoc(doc(db, "users", currentUser.uid, "data", "profile"), userProfile);
             
             // Create Public Profile for Friend Finding
-            // Note: In Firestore keys can't contain '.', so we replace with ',' or simple encode
             const safeEmail = currentUser.email.replace(/\./g, ',');
             await setDoc(doc(db, "public_profiles", safeEmail), {
                 uid: currentUser.uid,
@@ -961,7 +965,6 @@
                 const docSnap = await getDoc(doc(db, "public_profiles", safeEmail));
                 if (docSnap.exists()) {
                     const friendData = docSnap.data();
-                    // Check if already added
                     if(friends.some(f => f.uid === friendData.uid)) {
                         msg.innerText = "Already in your friends list.";
                     } else {
@@ -1023,7 +1026,6 @@
                         const r = doc.data();
                         const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
                         
-                        // Render Card (Simplified for viewing)
                         const card = document.createElement('div');
                         card.className = 'recipe-card';
                         
@@ -1297,13 +1299,27 @@
         document.getElementById('confirm-yes-btn').onclick = () => { if (confirmCallback) confirmCallback(); window.closeConfirmModal(); };
 
         window.switchTab = (tabId) => {
+            // Hide all sections
             document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
-            document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            const tabs = ['dashboard', 'planning', 'friends', 'substitutions'];
-            const index = tabs.indexOf(tabId);
-            if (index > -1) {
-                document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
+
+            // Reset Center Tabs
+            document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
+
+            // Reset Right Icon Tabs (Friends)
+            const friendBtn = document.getElementById('btn-friends-nav');
+            if(friendBtn) friendBtn.classList.remove('active');
+
+            // Set Active State
+            if (tabId === 'friends' || tabId === 'friend-cookbook') {
+                if(friendBtn) friendBtn.classList.add('active');
+            } else {
+                // It's a center tab
+                const tabs = ['dashboard', 'planning', 'substitutions'];
+                const index = tabs.indexOf(tabId);
+                if (index > -1) {
+                    document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
+                }
             }
         };
 
