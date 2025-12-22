@@ -31,7 +31,7 @@
             --hover-bg: #EBE8E0;
             --scroll-track: #f1f1f1;
             --scroll-thumb: #c1c1c1;
-            --bottom-nav-height: 70px; /* New variable for mobile nav */
+            --bottom-nav-height: 70px;
         }
 
         [data-theme="dark"] {
@@ -106,7 +106,7 @@
         
         /* --- MOBILE NAV BOTTOM BAR --- */
         .mobile-nav-bar {
-            display: none; /* Hidden by default */
+            display: none; 
             position: fixed; bottom: 0; left: 0; width: 100%; height: var(--bottom-nav-height);
             background: var(--nav-bg); border-top: 1px solid var(--border);
             z-index: 900; justify-content: space-around; align-items: center;
@@ -241,13 +241,12 @@
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
             display: flex; 
             flex-direction: column; 
-            height: 400px; /* FIXED HEIGHT */
+            height: 400px; 
             overflow: hidden; 
         }
         
         .recipe-card:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(0,0,0, 0.1); border-color: var(--primary); }
 
-        /* The area containing text. We hide overflow and apply a fade mask */
         .clickable-area { 
             cursor: pointer; 
             flex-grow: 1; 
@@ -257,7 +256,6 @@
             position: relative;
         }
 
-        /* The Fade Out Effect at the bottom of the card content */
         .clickable-area::after {
             content: "";
             position: absolute;
@@ -298,17 +296,31 @@
         .btn-cook:hover { background: var(--primary-dark); }
         .expand-hint { font-size: 0.75rem; color: var(--text-light); transition: 0.3s; font-weight: 500; }
 
-        .planner-grid { display: grid; grid-template-columns: 80px repeat(7, 1fr); gap: 8px; overflow-x: auto; margin-bottom: 2.5rem; background: var(--card-bg); padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border: var(--border); }
-        .day-header { font-family: 'DM Serif Display', serif; text-align: center; padding-bottom: 1rem; font-size: 1.1rem; color: var(--text-main); border-bottom: 2px solid var(--bg-color); margin-bottom: 0.5rem; }
-        .meal-row-label { font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        /* --- UPDATED PLANNER GRID V.08 --- */
+        /* Flex container for the planner: Labels + 7 Day Columns */
+        .planner-grid { 
+            display: flex; gap: 8px; overflow-x: auto; margin-bottom: 2.5rem; 
+            background: var(--card-bg); padding: 1.5rem; 
+            border-radius: var(--border-radius); box-shadow: var(--shadow); border: var(--border); 
+        }
+        
+        .planner-labels-column { display: flex; flex-direction: column; min-width: 80px; gap:8px;}
+        .day-column { flex: 1; min-width: 130px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .day-header { font-family: 'DM Serif Display', serif; text-align: center; padding-bottom: 1rem; font-size: 1.1rem; color: var(--text-main); border-bottom: 2px solid var(--bg-color); margin-bottom: 0.5rem; min-height: 45px;}
+        .meal-row-label { font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-light); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; text-align: center; height: 90px; }
+        .meal-row-label.small { height: 45px; } /* For dinner/side which are smaller */
         .meal-row-label i { font-size: 1.1rem; margin-bottom: 4px; color: var(--primary); opacity: 0.7; }
-        .meal-slot { background: var(--slot-bg); border: 1px solid transparent; border-radius: 12px; min-height: 90px; padding: 4px; font-size: 0.8rem; position: relative; transition: 0.2s; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        
+        .meal-slot { background: var(--slot-bg); border: 1px solid transparent; border-radius: 12px; height: 90px; padding: 4px; font-size: 0.8rem; position: relative; transition: 0.2s; cursor: pointer; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .meal-slot:hover { background: var(--hover-bg); }
         .meal-slot.drag-over { background: var(--hover-bg); border: 2px dashed var(--primary); }
-        .meal-slot[data-type^="dinner"] { min-height: 45px; padding: 2px; }
+        
+        .meal-slot[data-type^="dinner"] { height: 45px; padding: 2px; }
         .meal-slot[data-type^="dinner"] .slot-placeholder { font-size: 0.8rem; }
         .slot-placeholder { color: var(--text-light); font-size: 1.1rem; pointer-events: none; transition: 0.2s; }
         .meal-slot:hover .slot-placeholder { color: var(--primary); transform: scale(1.2); }
+        
         .planned-meal { background: var(--card-bg); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); cursor: default; font-weight: 500; font-size: 0.85rem; color: var(--text-main); }
         .meal-slot[data-type^="dinner"] .planned-meal { padding: 2px 8px; font-size: 0.75rem; border-radius: 6px; }
         .remove-meal { cursor: pointer; color: #D1D5DB; margin-left: 5px; transition: 0.2s;}
@@ -432,17 +444,15 @@
         /* --- MOBILE RESPONSIVE QUERIES --- */
         @media (max-width: 768px) {
             /* Layout & Nav */
-            body { padding-bottom: calc(80px + var(--bottom-nav-height)); } /* Space for bottom nav */
+            body { padding-bottom: calc(80px + var(--bottom-nav-height)); } 
             .nav-center, #btn-friends-nav { display: none !important; }
             .mobile-nav-bar { display: flex; }
             .nav-brand { font-size: 1.5rem; }
             
             /* Grids & Cards */
-            .recipe-grid { grid-template-columns: 1fr; } /* Single column cards */
-            .recipe-card { height: auto; min-height: 400px; } /* Let them be tall */
+            .recipe-grid { grid-template-columns: 1fr; } 
+            .recipe-card { height: auto; min-height: 400px; }
             .tools-section { grid-template-columns: 1fr; }
-            .planner-grid { display: block; }
-            .meal-slot { margin-bottom: 10px; }
             
             /* Modals */
             .modal { width: 100%; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; margin: 0; max-width: 100%; max-height: 90vh; }
@@ -454,6 +464,48 @@
             
             /* FAB moves up */
             .fab { bottom: calc(20px + var(--bottom-nav-height)); }
+
+            /* --- PLANNER MOBILE VIEW V.08 --- */
+            .planner-grid { 
+                display: block; /* Switch from Flex to Block for stacking */
+                padding: 1rem; 
+            }
+            .planner-labels-column { display: none; } /* Hide the left column labels */
+            .day-column { 
+                margin-bottom: 2rem; 
+                border-bottom: 1px solid var(--border); 
+                padding-bottom: 1rem; 
+            }
+            .day-column:last-child { border-bottom: none; margin-bottom: 0; }
+            
+            .day-header { text-align: left; font-size: 1.4rem; padding-left: 0.5rem; border-bottom: none; margin-bottom: 0.8rem; }
+            
+            /* Inject labels via CSS on mobile */
+            .meal-slot { 
+                height: auto; min-height: 50px; 
+                margin-bottom: 8px; 
+                flex-direction: row; 
+                justify-content: flex-start; 
+                padding: 8px 12px;
+                text-align: left;
+            }
+            .meal-slot::before {
+                content: attr(data-label); /* Uses attribute to label the slot */
+                width: 80px; 
+                font-size: 0.75rem; 
+                font-weight: 700; 
+                text-transform: uppercase; 
+                color: var(--text-light);
+                letter-spacing: 0.5px;
+                flex-shrink: 0;
+            }
+            .meal-slot[data-type^="dinner"] { height: auto; padding: 8px 12px; }
+            .slot-placeholder { font-size: 1rem; margin-left: auto; }
+            
+            .planned-meal { 
+                width: auto; flex-grow: 1; margin-left: 0; 
+                height: auto; padding: 8px 12px;
+            }
         }
     </style>
 </head>
@@ -551,21 +603,64 @@
                 <h2>Weekly Plan</h2>
                 <button class="btn-sm" onclick="clearWeeklyPlan()"><i class="fas fa-trash-alt"></i> Clear Week</button>
             </div>
+            
             <div class="planner-grid">
-                <div></div>
-                <div class="day-header">Mon</div><div class="day-header">Tue</div><div class="day-header">Wed</div><div class="day-header">Thu</div><div class="day-header">Fri</div><div class="day-header">Sat</div><div class="day-header">Sun</div>
+                <div class="planner-labels-column">
+                    <div class="day-header" style="border:none;"></div> <div class="meal-row-label"><i class="fas fa-coffee"></i>Break</div>
+                    <div class="meal-row-label"><i class="fas fa-hamburger"></i>Lunch</div>
+                    <div class="meal-row-label small"><i class="fas fa-drumstick-bite"></i>Dinner</div>
+                    <div class="meal-row-label small"><i class="fas fa-bread-slice"></i>Side</div>
+                </div>
 
-                <div class="meal-row-label"><i class="fas fa-coffee"></i>Break</div>
-                <div class="meal-slot" data-day="0" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-
-                <div class="meal-row-label"><i class="fas fa-hamburger"></i>Lunch</div>
-                <div class="meal-slot" data-day="0" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-
-                <div class="meal-row-label"><i class="fas fa-drumstick-bite"></i>Dinner</div>
-                <div class="meal-slot" data-day="0" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="dinner-main" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-
-                <div class="meal-row-label"><i class="fas fa-bread-slice"></i>Side</div>
-                <div class="meal-slot" data-day="0" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="1" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="2" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="3" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="4" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="5" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div><div class="meal-slot" data-day="6" data-type="dinner-side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                <div class="day-column">
+                    <div class="day-header">Mon</div>
+                    <div class="meal-slot" data-day="0" data-type="break" data-label="Break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="0" data-type="lunch" data-label="Lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="0" data-type="dinner-main" data-label="Dinner" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="0" data-type="dinner-side" data-label="Side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+                <div class="day-column">
+                    <div class="day-header">Tue</div>
+                    <div class="meal-slot" data-day="1" data-type="break" data-label="Break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="1" data-type="lunch" data-label="Lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="1" data-type="dinner-main" data-label="Dinner" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="1" data-type="dinner-side" data-label="Side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+                <div class="day-column">
+                    <div class="day-header">Wed</div>
+                    <div class="meal-slot" data-day="2" data-type="break" data-label="Break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="2" data-type="lunch" data-label="Lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="2" data-type="dinner-main" data-label="Dinner" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="2" data-type="dinner-side" data-label="Side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+                <div class="day-column">
+                    <div class="day-header">Thu</div>
+                    <div class="meal-slot" data-day="3" data-type="break" data-label="Break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="3" data-type="lunch" data-label="Lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="3" data-type="dinner-main" data-label="Dinner" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="3" data-type="dinner-side" data-label="Side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+                <div class="day-column">
+                    <div class="day-header">Fri</div>
+                    <div class="meal-slot" data-day="4" data-type="break" data-label="Break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="4" data-type="lunch" data-label="Lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="4" data-type="dinner-main" data-label="Dinner" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="4" data-type="dinner-side" data-label="Side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+                <div class="day-column">
+                    <div class="day-header">Sat</div>
+                    <div class="meal-slot" data-day="5" data-type="break" data-label="Break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="5" data-type="lunch" data-label="Lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="5" data-type="dinner-main" data-label="Dinner" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="5" data-type="dinner-side" data-label="Side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+                <div class="day-column">
+                    <div class="day-header">Sun</div>
+                    <div class="meal-slot" data-day="6" data-type="break" data-label="Break" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="6" data-type="lunch" data-label="Lunch" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="6" data-type="dinner-main" data-label="Dinner" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="meal-slot" data-day="6" data-type="dinner-side" data-label="Side" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
             </div>
 
             <div class="tools-section">
