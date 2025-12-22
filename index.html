@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Stocked | Meal Planner</title>
     
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%235C8D89' d='M96 0C60.7 0 32 28.7 32 64V96c0 16.4 6.1 31.4 16.2 43.2C40.3 151.1 35.1 164.5 33 179c-3.7 26.3 15.1 50.7 41.5 54.4l5.5 .8V384c0 70.7 57.3 128 128 128h160c70.7 0 128-57.3 128-128V234.2l5.5-.8c26.3-3.7 45.1-28 41.5-54.4c-2.1-14.5-7.3-27.9-15.2-39.8C473.9 127.4 480 112.4 480 96V64c0-35.3-28.7-64-64-64H96zM416 96H96V64h320v32zM96 384V219.8l-10.8-7.2c-10.8-7.2-16.4-20.2-14.3-33c2.2-13.1 13.5-22.6 26.8-22.6H414.3c13.3 0 24.6 9.5 26.8 22.6c2.2 12.8-3.5 25.8-14.3 33l-10.8 7.2V384c0 35.3-28.7 64-64 64H160c-35.3 0-64-28.7-64-64z'/%3E%3C/svg%3E">
@@ -31,6 +31,7 @@
             --hover-bg: #EBE8E0;
             --scroll-track: #f1f1f1;
             --scroll-thumb: #c1c1c1;
+            --bottom-nav-height: 70px; /* New variable for mobile nav */
         }
 
         [data-theme="dark"] {
@@ -52,7 +53,7 @@
             --scroll-thumb: #555;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
         body { 
             background-color: var(--bg-color); 
@@ -68,6 +69,7 @@
             letter-spacing: 0.5px;
         }
 
+        /* --- DESKTOP NAV --- */
         nav {
             background: var(--nav-bg);
             padding: 1rem 2rem;
@@ -102,6 +104,23 @@
         .nav-icon-btn:hover { color: var(--primary); background: var(--hover-bg); }
         .nav-icon-btn.active { color: var(--primary); background: var(--hover-bg); box-shadow: inset 0 0 0 1px var(--primary); }
         
+        /* --- MOBILE NAV BOTTOM BAR --- */
+        .mobile-nav-bar {
+            display: none; /* Hidden by default */
+            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--bottom-nav-height);
+            background: var(--nav-bg); border-top: 1px solid var(--border);
+            z-index: 900; justify-content: space-around; align-items: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+        }
+        .mobile-nav-item {
+            background: none; border: none; flex-direction: column; display: flex; align-items: center; justify-content: center;
+            color: var(--text-light); font-size: 0.7rem; font-weight: 600; gap: 4px; cursor: pointer; flex: 1; height: 100%;
+        }
+        .mobile-nav-item i { font-size: 1.2rem; margin-bottom: 2px; }
+        .mobile-nav-item.active { color: var(--primary); }
+
+        /* --- SETTINGS DROPDOWN --- */
         .settings-dropdown {
             position: absolute; top: 120%; right: 0;
             background: var(--card-bg); border: var(--border); border-radius: 12px;
@@ -192,6 +211,7 @@
         .filter-pill.active { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(92, 141, 137, 0.3); }
         .btn-manage-cats { background: none; border: none; cursor: pointer; color: var(--text-light); font-size: 1rem; padding: 8px; transition: 0.2s; border-radius: 50%; }
         .btn-manage-cats:hover { background: var(--hover-bg); color: var(--primary); }
+        .recipe-count-badge { font-size: 0.85rem; color: var(--text-light); font-weight: 600; white-space: nowrap; margin-right: 8px; }
 
         .cat-list { list-style: none; margin-top: 1rem; }
         .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--input-bg); border: var(--border); border-radius: 8px; margin-bottom: 0.5rem; cursor: grab; transition: 0.2s; color: var(--text-main); }
@@ -209,7 +229,7 @@
         .color-swatch:hover { transform: scale(1.2); }
         .color-swatch.selected { border-color: var(--text-main); box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--primary); }
 
-        /* --- V.04 RECIPE CARD STYLES --- */
+        /* --- RECIPE CARD STYLES --- */
         .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
         .recipe-card { 
             background: var(--card-bg); 
@@ -221,7 +241,7 @@
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
             display: flex; 
             flex-direction: column; 
-            height: 400px; /* UPDATED: FIXED HEIGHT 400px */
+            height: 400px; /* FIXED HEIGHT */
             overflow: hidden; 
         }
         
@@ -295,7 +315,6 @@
         .remove-meal:hover { color: var(--accent); }
 
         .tools-section { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-        @media (max-width: 768px) { .tools-section { grid-template-columns: 1fr; } .planner-grid { display: block; } .meal-slot { margin-bottom: 10px; } }
         .tool-card { background: var(--card-bg); padding: 2rem; border-radius: var(--border-radius); box-shadow: var(--shadow); display: flex; flex-direction: column; max-height: 650px; border: var(--border); }
         .tool-card h3 { font-size: 1.4rem; display: flex; align-items: center; gap: 10px; margin:0; color: var(--text-main); }
         .tool-card h3 i { color: var(--accent); font-size: 1.2rem; }
@@ -368,7 +387,6 @@
         .picker-item:hover { background: var(--slot-bg); color: var(--primary); padding-left: 1.5rem; }
         .picker-item:last-child { border-bottom: none; }
         
-        /* Updated: Removed sticky positioning so title scrolls */
         .modal-header-row { 
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
         }
@@ -410,6 +428,33 @@
         .cook-list-item.done { text-decoration: line-through; color: var(--text-light); }
 
         #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--nav-bg); z-index: 3000; justify-content: center; align-items: center; font-size: 2rem; color: var(--primary); }
+
+        /* --- MOBILE RESPONSIVE QUERIES --- */
+        @media (max-width: 768px) {
+            /* Layout & Nav */
+            body { padding-bottom: calc(80px + var(--bottom-nav-height)); } /* Space for bottom nav */
+            .nav-center, #btn-friends-nav { display: none !important; }
+            .mobile-nav-bar { display: flex; }
+            .nav-brand { font-size: 1.5rem; }
+            
+            /* Grids & Cards */
+            .recipe-grid { grid-template-columns: 1fr; } /* Single column cards */
+            .recipe-card { height: auto; min-height: 400px; } /* Let them be tall */
+            .tools-section { grid-template-columns: 1fr; }
+            .planner-grid { display: block; }
+            .meal-slot { margin-bottom: 10px; }
+            
+            /* Modals */
+            .modal { width: 100%; border-radius: 24px 24px 0 0; position: fixed; bottom: 0; margin: 0; max-width: 100%; max-height: 90vh; }
+            .modal-overlay { align-items: flex-end; }
+            
+            /* Typography */
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            
+            /* FAB moves up */
+            .fab { bottom: calc(20px + var(--bottom-nav-height)); }
+        }
     </style>
 </head>
 <body>
@@ -454,11 +499,27 @@
         </div>
     </nav>
 
+    <div class="mobile-nav-bar" id="mobile-nav" style="display:none;">
+        <button class="mobile-nav-item active" onclick="switchTab('dashboard')">
+            <i class="fas fa-th-large"></i><span>Recipes</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchTab('planning')">
+            <i class="fas fa-calendar-alt"></i><span>Plan</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchTab('friends')">
+            <i class="fas fa-user-friends"></i><span>Friends</span>
+        </button>
+        <button class="mobile-nav-item" onclick="switchTab('substitutions')">
+            <i class="fas fa-calculator"></i><span>Tools</span>
+        </button>
+    </div>
+
     <div class="container" id="main-content" style="display:none;">
         <section id="dashboard" class="page-section active">
             <br>
             <div class="filter-row">
                 <div class="filter-scroll" id="dashboard-filters"></div>
+                <span id="total-recipe-count" class="recipe-count-badge"></span>
                 <button class="btn-manage-cats" onclick="openCatManager()"><i class="fas fa-pencil-alt"></i></button>
             </div>
             
@@ -901,7 +962,14 @@
                 currentUser = user;
                 document.getElementById('auth-modal').classList.remove('open');
                 document.getElementById('main-content').style.display = 'block';
-                document.getElementById('nav-actions').style.display = 'flex';
+                // Show desktop nav actions only on desktop
+                if(window.innerWidth > 768) {
+                    document.getElementById('nav-actions').style.display = 'flex';
+                }
+                // Show Mobile Nav if on mobile
+                if(window.innerWidth <= 768) {
+                    document.getElementById('mobile-nav').style.display = 'flex';
+                }
                 document.getElementById('user-section').style.display = 'flex'; 
                 await loadUserData();
                 initCustomSelects();
@@ -912,6 +980,7 @@
                 document.getElementById('main-content').style.display = 'none';
                 document.getElementById('nav-actions').style.display = 'none';
                 document.getElementById('user-section').style.display = 'none';
+                document.getElementById('mobile-nav').style.display = 'none';
             }
         });
 
@@ -1451,25 +1520,52 @@
             document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
 
-            // Reset Center Tabs
+            // Reset Center Tabs (Desktop)
             document.querySelectorAll('.nav-tabs button').forEach(btn => btn.classList.remove('active'));
+            
+            // Reset Mobile Bottom Nav
+            document.querySelectorAll('.mobile-nav-item').forEach(btn => btn.classList.remove('active'));
 
-            // Reset Right Icon Tabs (Friends)
+            // Reset Right Icon Tabs (Friends - Desktop)
             const friendBtn = document.getElementById('btn-friends-nav');
             if(friendBtn) friendBtn.classList.remove('active');
 
-            // Set Active State
-            if (tabId === 'friends' || tabId === 'friend-cookbook') {
-                if(friendBtn) friendBtn.classList.add('active');
+            // Set Active State based on device
+            if(window.innerWidth > 768) {
+                // Desktop Logic
+                if (tabId === 'friends' || tabId === 'friend-cookbook') {
+                    if(friendBtn) friendBtn.classList.add('active');
+                } else {
+                    const tabs = ['dashboard', 'planning', 'substitutions'];
+                    const index = tabs.indexOf(tabId);
+                    if (index > -1) {
+                        document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
+                    }
+                }
             } else {
-                // It's a center tab
-                const tabs = ['dashboard', 'planning', 'substitutions'];
-                const index = tabs.indexOf(tabId);
-                if (index > -1) {
-                    document.querySelectorAll('.nav-tabs button')[index].classList.add('active');
+                // Mobile Logic
+                const mobIndex = ['dashboard', 'planning', 'friends', 'substitutions'].indexOf(tabId);
+                if(tabId === 'friend-cookbook') {
+                     // Keep 'friends' active on bottom bar when viewing a cookbook
+                     document.querySelectorAll('.mobile-nav-item')[2].classList.add('active');
+                } else if(mobIndex > -1) {
+                    document.querySelectorAll('.mobile-nav-item')[mobIndex].classList.add('active');
                 }
             }
         };
+
+        // Listen for resize to adjust nav visibility
+        window.addEventListener('resize', () => {
+            if(currentUser) {
+                if(window.innerWidth > 768) {
+                    document.getElementById('nav-actions').style.display = 'flex';
+                    document.getElementById('mobile-nav').style.display = 'none';
+                } else {
+                    document.getElementById('nav-actions').style.display = 'none';
+                    document.getElementById('mobile-nav').style.display = 'flex';
+                }
+            }
+        });
 
         window.openCatManager = () => {
             renderCatManagerList();
@@ -1697,11 +1793,10 @@
 
         function renderRecipes() {
             const grid = document.getElementById('recipe-grid');
+            const countEl = document.getElementById('total-recipe-count');
             grid.innerHTML = '';
             
-            // --- V.05 UPDATE: Sorting Logic ---
-            // 1. Favorites First
-            // 2. Alphabetical (A-Z)
+            // 1. Sort: Favorites first, then Alphabetical (A-Z)
             recipes.sort((a, b) => {
                 if (a.favorite === b.favorite) {
                     return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
@@ -1709,6 +1804,7 @@
                 return a.favorite ? -1 : 1;
             });
             
+            // 2. Filter
             const filtered = currentDashboardFilter === "All" 
                 ? recipes 
                 : recipes.filter(r => {
@@ -1716,6 +1812,9 @@
                     return cats.includes(currentDashboardFilter);
                 });
             
+            // 3. Update Count Badge
+            countEl.innerText = `${filtered.length} Recipe${filtered.length !== 1 ? 's' : ''}`;
+
             if (recipes.length === 0) {
                  grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 2rem; color:var(--text-light);">
                     <div style="font-size: 1.2rem; font-weight: 500;">Add a recipe to get started!</div>
