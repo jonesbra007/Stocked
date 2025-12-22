@@ -920,8 +920,11 @@
 
     <div id="view-recipe-modal" class="modal-overlay">
         <div class="modal">
-            <div class="modal-header-row">
-                <h2 id="view-modal-title">Recipe Title</h2>
+            <div class="modal-header-row" style="align-items: flex-start;">
+                <div style="flex-grow:1;">
+                    <div id="view-modal-badges" class="cat-badges" style="margin-bottom:8px;"></div>
+                    <h2 id="view-modal-title" class="recipe-title" style="font-size:1.8rem; color:var(--text-main);">Recipe Title</h2>
+                </div>
                 <button class="modal-close-btn" onclick="closeViewModal()"><i class="fas fa-times"></i></button>
             </div>
             
@@ -1201,7 +1204,7 @@
             
             let newVal = current + change;
             if(newVal < 0.5) newVal = 0.5; 
-            if(newVal > 10) newVal = 10;    
+            if(newVal > 10) newVal = 10;     
             
             valSpan.innerText = newVal + 'x';
             
@@ -1641,8 +1644,8 @@
                 // Mobile Logic
                 const mobIndex = ['dashboard', 'planning', 'friends', 'substitutions'].indexOf(tabId);
                 if(tabId === 'friend-cookbook') {
-                     // Keep 'friends' active on bottom bar when viewing a cookbook
-                     document.querySelectorAll('.mobile-nav-item')[2].classList.add('active');
+                      // Keep 'friends' active on bottom bar when viewing a cookbook
+                      document.querySelectorAll('.mobile-nav-item')[2].classList.add('active');
                 } else if(mobIndex > -1) {
                     document.querySelectorAll('.mobile-nav-item')[mobIndex].classList.add('active');
                 }
@@ -1861,7 +1864,18 @@
             const r = recipes.find(x => x.id === id);
             if(!r) return;
 
+            // Updated Modal Title Logic
             document.getElementById('view-modal-title').innerText = r.title;
+            
+            // Inject Badges Logic
+            const badgesContainer = document.getElementById('view-modal-badges');
+            const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
+            let badgesHtml = '';
+            cats.forEach(c => {
+                const badgeColor = getColorForCategory(c);
+                badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
+            });
+            badgesContainer.innerHTML = badgesHtml;
             
             // Populate Ingredients
             const ingList = document.getElementById('view-ingredients');
