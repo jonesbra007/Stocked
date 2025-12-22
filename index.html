@@ -209,16 +209,52 @@
         .color-swatch:hover { transform: scale(1.2); }
         .color-swatch.selected { border-color: var(--text-main); box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--primary); }
 
-        .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; align-items: start; }
-        .recipe-card { background: var(--card-bg); border-radius: var(--border-radius); padding: 1.5rem; border: var(--border); box-shadow: var(--shadow); position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; min-height: 260px; overflow: hidden; }
+        /* --- V.04 RECIPE CARD STYLES --- */
+        .recipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; }
+        .recipe-card { 
+            background: var(--card-bg); 
+            border-radius: var(--border-radius); 
+            padding: 1.5rem; 
+            border: var(--border); 
+            box-shadow: var(--shadow); 
+            position: relative; 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            display: flex; 
+            flex-direction: column; 
+            height: 400px; /* UPDATED: FIXED HEIGHT 400px */
+            overflow: hidden; 
+        }
+        
         .recipe-card:hover { transform: translateY(-4px); box-shadow: 0 15px 35px rgba(0,0,0, 0.1); border-color: var(--primary); }
-        .clickable-area { cursor: pointer; flex-grow: 1; display: flex; flex-direction: column; }
-        .recipe-details { font-size: 0.95rem; color: var(--text-light); margin-bottom: 1.2rem; }
-        .recipe-details h4 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; color: var(--text-main); opacity: 0.6; }
-        .ingredient-list { margin-left: 1rem; margin-bottom: 1rem; line-height: 1.6; }
-        .instruction-preview { position: relative; max-height: 60px; overflow: hidden; transition: max-height 0.5s; white-space: pre-line; line-height: 1.7; }
-        .instruction-preview::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 50px; background: linear-gradient(transparent, var(--card-bg)); pointer-events: none; transition: opacity 0.3s; }
-        .recipe-card.expanded .instruction-preview::after { opacity: 0; }
+
+        /* The area containing text. We hide overflow and apply a fade mask */
+        .clickable-area { 
+            cursor: pointer; 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* The Fade Out Effect at the bottom of the card content */
+        .clickable-area::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(transparent, var(--card-bg));
+            pointer-events: none;
+        }
+
+        .recipe-details { font-size: 0.95rem; color: var(--text-light); margin-bottom: 0.5rem; }
+        .recipe-details h4 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem; color: var(--text-main); opacity: 0.6; }
+        .ingredient-list { margin-left: 1rem; margin-bottom: 0.5rem; line-height: 1.5; font-size: 0.9rem;}
+        
+        .instruction-preview { white-space: pre-line; line-height: 1.6; }
+        
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
         .recipe-title { font-size: 1.4rem; color: var(--text-main); line-height: 1.2; }
         
@@ -331,9 +367,10 @@
         .picker-item { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-radius: 8px; color: var(--text-main); }
         .picker-item:hover { background: var(--slot-bg); color: var(--primary); padding-left: 1.5rem; }
         .picker-item:last-child { border-bottom: none; }
+        
+        /* Updated: Removed sticky positioning so title scrolls */
         .modal-header-row { 
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;
-            position: sticky; top: 0; background: var(--card-bg); z-index: 20; padding-top: 5px;
         }
         
         .modal h2 { margin-bottom: 0; color: var(--primary); font-size: 1.8rem; }
@@ -725,6 +762,30 @@
         </div>
     </div>
 
+    <div id="view-recipe-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <h2 id="view-modal-title">Recipe Title</h2>
+                <button class="modal-close-btn" onclick="closeViewModal()"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:1.5rem; border-bottom:1px solid var(--border); padding-bottom:1rem;">
+                <button id="view-btn-cook" class="btn-cook" style="flex:1; justify-content:center;"><i class="fas fa-fire"></i> Start Cooking</button>
+                <button id="view-btn-edit" class="btn-sm"><i class="fas fa-edit"></i> Edit</button>
+                <button id="view-btn-copy" class="btn-sm"><i class="far fa-copy"></i> Copy Text</button>
+            </div>
+
+            <div class="form-group">
+                <label>Ingredients</label>
+                <ul id="view-ingredients" style="margin-left:1.5rem; line-height:1.6; color:var(--text-main);"></ul>
+            </div>
+            <div class="form-group">
+                <label>Instructions</label>
+                <div id="view-instructions" style="white-space: pre-line; line-height:1.7; color:var(--text-main);"></div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
@@ -761,7 +822,7 @@
         let appCategories = [
             { name: "Italian", color: "#E74C3C" }, 
             { name: "Mexican", color: "#2ECC71" }, 
-            { name: "Asian", color: "#E67E22" },   
+            { name: "Asian", color: "#E67E22" },    
             { name: "American", color: "#3498DB" },
             { name: "Healthy", color: "#A2D729" }, 
             { name: "Breakfast", color: "#F1C40F"},
@@ -976,7 +1037,7 @@
             
             let newVal = current + change;
             if(newVal < 0.5) newVal = 0.5; 
-            if(newVal > 10) newVal = 10;   
+            if(newVal > 10) newVal = 10;    
             
             valSpan.innerText = newVal + 'x';
             
@@ -1345,11 +1406,11 @@
                     });
                 } else {
                     appCategories = rawCats.map(catObj => {
-                         let defaultMatch = appCategories.find(def => def.name === catObj.name);
-                         if(defaultMatch && defaultMatch.color !== catObj.color) {
+                          let defaultMatch = appCategories.find(def => def.name === catObj.name);
+                          if(defaultMatch && defaultMatch.color !== catObj.color) {
                              return { name: catObj.name, color: defaultMatch.color }; 
-                         }
-                         return catObj;
+                          }
+                          return catObj;
                     });
                 }
             } else {
@@ -1604,10 +1665,49 @@
             return found ? found.color : stringToColor(catName);
         }
 
+        /* --- V.03: Modal-Based Recipe Viewing --- */
+        window.openViewModal = (id) => {
+            const r = recipes.find(x => x.id === id);
+            if(!r) return;
+
+            document.getElementById('view-modal-title').innerText = r.title;
+            
+            // Populate Ingredients
+            const ingList = document.getElementById('view-ingredients');
+            const multiplier = r.currentMultiplier || 1.0;
+            // Use the scaling function to show correct amounts
+            ingList.innerHTML = formatScaledIngredients(r.ingredients, multiplier);
+
+            // Populate Instructions
+            document.getElementById('view-instructions').innerText = r.instructions;
+
+            // Setup Buttons
+            document.getElementById('view-btn-cook').onclick = () => { closeViewModal(); openCookMode(r.id); };
+            document.getElementById('view-btn-edit').onclick = () => { closeViewModal(); editRecipe(r.id); };
+            document.getElementById('view-btn-copy').onclick = () => {
+                const text = `${r.title}\n\nINGREDIENTS:\n${r.ingredients}\n\nINSTRUCTIONS:\n${r.instructions}`;
+                navigator.clipboard.writeText(text);
+                showToast("Recipe copied to clipboard");
+            };
+
+            document.getElementById('view-recipe-modal').classList.add('open');
+        };
+
+        window.closeViewModal = () => document.getElementById('view-recipe-modal').classList.remove('open');
+
         function renderRecipes() {
             const grid = document.getElementById('recipe-grid');
             grid.innerHTML = '';
-            recipes.sort((a, b) => (a.favorite === b.favorite) ? 0 : a.favorite ? -1 : 1);
+            
+            // --- V.05 UPDATE: Sorting Logic ---
+            // 1. Favorites First
+            // 2. Alphabetical (A-Z)
+            recipes.sort((a, b) => {
+                if (a.favorite === b.favorite) {
+                    return a.title.toLowerCase().localeCompare(b.title.toLowerCase());
+                }
+                return a.favorite ? -1 : 1;
+            });
             
             const filtered = currentDashboardFilter === "All" 
                 ? recipes 
@@ -1660,17 +1760,18 @@
                             </div>
                         </div>
                     </div>
-                    <div class="clickable-area" onclick="toggleExpand(this)">
+                    
+                    <div class="clickable-area" onclick="openViewModal('${r.id}')">
                         <div class="recipe-details">
                             <h4>Ingredients</h4>
                             <ul class="ingredient-list" data-original="${encodeURIComponent(r.ingredients)}">${scaledIngredients}</ul>
                         </div>
-                        <div class="recipe-details" style="flex-grow: 1;"><h4>Instructions</h4><div class="instruction-preview">${r.instructions}</div></div>
+                        <div class="recipe-details"><h4>Instructions</h4><div class="instruction-preview">${r.instructions}</div></div>
                     </div>
+
                     <div class="card-actions">
                          <div style="display:flex; align-items:center; gap:10px;">
-                             <button class="btn-cook" onclick="openCookMode('${r.id}')"><i class="fas fa-fire"></i> Start Cooking</button>
-                             <span class="expand-hint"><i class="fas fa-chevron-down"></i> Expand</span>
+                             <button class="btn-cook" onclick="openCookMode('${r.id}')"><i class="fas fa-fire"></i> Cook</button>
                          </div>
                          <div class="action-buttons">
                             <button class="btn-icon" onclick="editRecipe('${r.id}')"><i class="fas fa-edit"></i></button>
@@ -1681,21 +1782,6 @@
                 grid.appendChild(card);
             });
         }
-
-        window.toggleExpand = (el) => {
-            const card = el.closest('.recipe-card');
-            const preview = card.querySelector('.instruction-preview');
-            const isExpanded = card.classList.contains('expanded');
-            if (isExpanded) {
-                preview.style.maxHeight = preview.scrollHeight + "px";
-                preview.offsetHeight; 
-                card.classList.remove('expanded');
-                preview.style.maxHeight = null;
-            } else {
-                card.classList.add('expanded');
-                preview.style.maxHeight = preview.scrollHeight + "px";
-            }
-        };
 
         window.drag = (ev, id) => { ev.dataTransfer.setData("recipeId", id); };
         window.allowDrop = (ev) => { ev.preventDefault(); ev.target.closest('.meal-slot').classList.add('drag-over'); };
