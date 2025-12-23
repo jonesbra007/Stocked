@@ -164,6 +164,7 @@
             cursor: pointer; transition: 0.2s; z-index: 5;
         }
         textarea + .mic-btn { top: 20px; transform: none; }
+        .mic-btn:hover { color: var(--primary); transform: scale(1.1); }
         .mic-btn.listening { color: var(--danger); animation: pulse-red 1.5s infinite; }
         
         @keyframes pulse-red {
@@ -968,6 +969,7 @@
         let isSignup = false; 
         
         let recipes = [];
+        let friendRecipes = []; // Added global variable to store friend data
         let mealPlan = {};
         let inventory = [];
         let manualGrocery = [];
@@ -1330,7 +1332,8 @@
             const grid = document.getElementById('friend-recipe-grid');
             grid.innerHTML = '';
             document.getElementById('friend-cookbook-title').innerText = `${friend.firstName}'s Cookbook`;
-            
+            friendRecipes = []; // Clear previous friend data
+
             try {
                 const q = query(collection(db, "users", friend.uid, "recipes"));
                 const querySnapshot = await getDocs(q);
@@ -1340,6 +1343,9 @@
                 } else {
                     querySnapshot.forEach((doc) => {
                         const r = doc.data();
+                        r.id = doc.id; // Ensure ID is attached
+                        friendRecipes.push(r);
+
                         const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
                         
                         const card = document.createElement('div');
@@ -1361,7 +1367,7 @@
                                     <div class="recipe-title">${r.title}</div>
                                 </div>
                             </div>
-                            <div class="clickable-area">
+                            <div class="clickable-area" onclick="openViewModal('${r.id}', true)">
                                 <div class="recipe-details"><h4>Ingredients</h4><ul class="ingredient-list">${r.ingredients.split('\n').map(i=>`<li>${i}</li>`).join('')}</ul></div>
                                 <div class="recipe-details" style="flex-grow: 1;"><h4>Instructions</h4><div class="instruction-preview">${formattedInst}</div></div>
                             </div>
@@ -1873,8 +1879,9 @@
         }
 
         /* --- V.03: Modal-Based Recipe Viewing --- */
-        window.openViewModal = (id) => {
-            const r = recipes.find(x => x.id === id);
+        window.openViewModal = (id, isFriend = false) => {
+            // Updated to fetch from correct array based on context
+            const r = isFriend ? friendRecipes.find(x => x.id === id) : recipes.find(x => x.id === id);
             if(!r) return;
 
             // Updated Modal Title Logic
@@ -1899,10 +1906,36 @@
             // Populate Instructions (USE NEW FORMATTER)
             document.getElementById('view-instructions').innerHTML = formatInstructionsHTML(r.instructions);
 
-            // Setup Buttons
-            document.getElementById('view-btn-cook').onclick = () => { closeViewModal(); openCookMode(r.id); };
-            document.getElementById('view-btn-edit').onclick = () => { closeViewModal(); editRecipe(r.id); };
-            document.getElementById('view-btn-copy').onclick = () => {
+            // Setup Buttons Logic (Friend vs Owner)
+            const btnEdit = document.getElementById('view-btn-edit');
+            const btnCook = document.getElementById('view-btn-cook');
+            const btnCopy = document.getElementById('view-btn-copy');
+
+            if(isFriend) {
+                // Change "Edit" to "Save"
+                btnEdit.innerHTML = '<i class="fas fa-download"></i> Save';
+                btnEdit.onclick = () => { 
+                    closeViewModal(); 
+                    copyFriendRecipe(r); // Pass full object directly
+                };
+                
+                // Allow cooking in friend mode
+                btnCook.onclick = () => {
+                    closeViewModal();
+                    openCookMode(r.id, true); 
+                };
+            } else {
+                // Default Owner Mode
+                btnEdit.innerHTML = '<i class="fas fa-edit"></i> Edit';
+                btnEdit.onclick = () => { closeViewModal(); editRecipe(r.id); };
+                
+                btnCook.onclick = () => {
+                    closeViewModal();
+                    openCookMode(r.id, false); 
+                };
+            }
+
+            btnCopy.onclick = () => {
                 const text = `${r.title}\n\nINGREDIENTS:\n${r.ingredients}\n\nINSTRUCTIONS:\n${r.instructions}`;
                 navigator.clipboard.writeText(text);
                 showToast("Recipe copied to clipboard");
@@ -2230,8 +2263,8 @@
             });
         };
 
-        window.openCookMode = (id) => {
-            const r = recipes.find(x => x.id == id);
+        window.openCookMode = (id, isFriend = false) => {
+            const r = isFriend ? friendRecipes.find(x => x.id == id) : recipes.find(x => x.id == id);
             if (!r) return;
             const currentMult = r.currentMultiplier || 1.0;
             
