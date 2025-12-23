@@ -164,7 +164,6 @@
             cursor: pointer; transition: 0.2s; z-index: 5;
         }
         textarea + .mic-btn { top: 20px; transform: none; }
-        .mic-btn:hover { color: var(--primary); transform: scale(1.1); }
         .mic-btn.listening { color: var(--danger); animation: pulse-red 1.5s infinite; }
         
         @keyframes pulse-red {
@@ -271,7 +270,9 @@
         .recipe-details h4 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem; color: var(--text-main); opacity: 0.6; }
         .ingredient-list { margin-left: 1rem; margin-bottom: 0.5rem; line-height: 1.5; font-size: 0.9rem;}
         
-        .instruction-preview { white-space: pre-line; line-height: 1.6; }
+        /* Updated to allow ordered lists */
+        .instruction-preview { line-height: 1.6; }
+        .instruction-preview ol { margin: 0; padding-left: 1.2rem; }
         
         .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
         .recipe-title { font-size: 1.4rem; color: var(--text-main); line-height: 1.2; }
@@ -940,7 +941,7 @@
             </div>
             <div class="form-group">
                 <label>Instructions</label>
-                <div id="view-instructions" style="white-space: pre-line; line-height:1.7; color:var(--text-main);"></div>
+                <div id="view-instructions" style="line-height:1.7; color:var(--text-main);"></div>
             </div>
         </div>
     </div>
@@ -1248,7 +1249,17 @@
                 return `<li>${scaledLine}</li>`;
             }).join('');
         }
-        // -------------------------------------
+        
+        // --- NEW HELPER: FORMAT INSTRUCTIONS AS NUMBERED LIST ---
+        function formatInstructionsHTML(text) {
+            if (!text) return '';
+            // Split by new line, filter empty lines
+            const steps = text.split('\n').filter(line => line.trim() !== '');
+            if (steps.length === 0) return '';
+            // Wrap in Ordered List
+            return `<ol style="margin-left: 20px; padding-left: 0;">${steps.map(step => `<li style="margin-bottom: 5px;">${step}</li>`).join('')}</ol>`;
+        }
+        // --------------------------------------------------------
 
         window.openAddFriendModal = () => {
             document.getElementById('add-friend-modal').classList.add('open');
@@ -1341,6 +1352,8 @@
                         });
                         badgesHtml += '</div>';
 
+                        const formattedInst = formatInstructionsHTML(r.instructions);
+
                         card.innerHTML = `
                             <div class="card-header">
                                 <div style="flex-grow:1;">
@@ -1350,7 +1363,7 @@
                             </div>
                             <div class="clickable-area">
                                 <div class="recipe-details"><h4>Ingredients</h4><ul class="ingredient-list">${r.ingredients.split('\n').map(i=>`<li>${i}</li>`).join('')}</ul></div>
-                                <div class="recipe-details" style="flex-grow: 1;"><h4>Instructions</h4><div class="instruction-preview">${r.instructions}</div></div>
+                                <div class="recipe-details" style="flex-grow: 1;"><h4>Instructions</h4><div class="instruction-preview">${formattedInst}</div></div>
                             </div>
                             <div class="card-actions">
                                  <button class="primary" style="width:100%; font-size:0.9rem;" onclick='copyFriendRecipe(${JSON.stringify(r).replace(/'/g, "&#39;")})'><i class="fas fa-download"></i> Save to My Books</button>
@@ -1883,8 +1896,8 @@
             // Use the scaling function to show correct amounts
             ingList.innerHTML = formatScaledIngredients(r.ingredients, multiplier);
 
-            // Populate Instructions
-            document.getElementById('view-instructions').innerText = r.instructions;
+            // Populate Instructions (USE NEW FORMATTER)
+            document.getElementById('view-instructions').innerHTML = formatInstructionsHTML(r.instructions);
 
             // Setup Buttons
             document.getElementById('view-btn-cook').onclick = () => { closeViewModal(); openCookMode(r.id); };
@@ -1953,6 +1966,9 @@
                 const multiplier = r.currentMultiplier || 1.0;
                 const scaledIngredients = formatScaledIngredients(r.ingredients, multiplier);
 
+                // USE NEW FORMATTER FOR CARD PREVIEW
+                const formattedInst = formatInstructionsHTML(r.instructions);
+
                 card.innerHTML = `
                     <div class="card-header">
                         <div style="flex-grow:1;">
@@ -1974,7 +1990,7 @@
                             <h4>Ingredients</h4>
                             <ul class="ingredient-list" data-original="${encodeURIComponent(r.ingredients)}">${scaledIngredients}</ul>
                         </div>
-                        <div class="recipe-details"><h4>Instructions</h4><div class="instruction-preview">${r.instructions}</div></div>
+                        <div class="recipe-details"><h4>Instructions</h4><div class="instruction-preview">${formattedInst}</div></div>
                     </div>
 
                     <div class="card-actions">
