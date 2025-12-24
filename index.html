@@ -421,6 +421,9 @@
 
         #confirm-modal { z-index: 2100; }
 
+        /* NEW ALERT MODAL - Z-INDEX 2200 to appear ABOVE the recipe modal */
+        #alert-modal { z-index: 2200; }
+
         #auth-modal .modal { max-width: 400px; text-align: center; }
         #auth-error { color: var(--danger); margin-top: 1rem; font-size: 0.9rem; display:none;}
         .auth-toggle { margin-top: 1rem; font-size: 0.9rem; color: var(--text-light); cursor: pointer; text-decoration: underline; }
@@ -778,6 +781,17 @@
         </div>
     </div>
 
+    <div id="alert-modal" class="modal-overlay">
+        <div class="modal" style="max-width: 400px; text-align: center;">
+            <div style="margin-bottom: 1rem; font-size: 3rem; color: var(--accent);"><i class="fas fa-exclamation-circle"></i></div>
+            <h2 class="confirm-title" style="margin-bottom: 1rem; color: var(--text-main);">Missing Details</h2>
+            <p id="alert-message" style="color: var(--text-light); margin-bottom: 2rem; font-size: 1rem;"></p>
+            <div class="modal-actions" style="justify-content: center; margin-top: 0;">
+                <button class="primary" onclick="closeAlertModal()">Got it</button>
+            </div>
+        </div>
+    </div>
+
     <div id="auth-modal" class="modal-overlay open">
         <div class="modal">
             <h2 id="auth-title" class="auth-title">Welcome to Stocked</h2>
@@ -969,7 +983,7 @@
         let isSignup = false; 
         
         let recipes = [];
-        let friendRecipes = []; // Added global variable to store friend data
+        let friendRecipes = []; 
         let mealPlan = {};
         let inventory = [];
         let manualGrocery = [];
@@ -1262,6 +1276,12 @@
             return `<ol style="margin-left: 20px; padding-left: 0;">${steps.map(step => `<li style="margin-bottom: 5px;">${step}</li>`).join('')}</ol>`;
         }
         // --------------------------------------------------------
+
+        window.openAlertModal = (message) => {
+            document.getElementById('alert-message').innerText = message;
+            document.getElementById('alert-modal').classList.add('open');
+        };
+        window.closeAlertModal = () => document.getElementById('alert-modal').classList.remove('open');
 
         window.openAddFriendModal = () => {
             document.getElementById('add-friend-modal').classList.add('open');
@@ -1774,7 +1794,21 @@
                 ingredients: document.getElementById('inp-ingredients').value,
                 instructions: document.getElementById('inp-instructions').value,
             };
-            if(!data.title) return alert("Title required");
+            
+            // Replaced default alert with Custom Modal
+            if(!data.title) {
+                openAlertModal("Please give your recipe a title.");
+                return;
+            }
+            if(!data.ingredients.trim()) {
+                openAlertModal("Please add at least one ingredient.");
+                return;
+            }
+            if(!data.instructions.trim()) {
+                openAlertModal("Please add cooking instructions.");
+                return;
+            }
+
             document.getElementById('loader').style.display = 'flex';
             if(id) {
                 const recipeRef = doc(db, "users", currentUser.uid, "recipes", id);
