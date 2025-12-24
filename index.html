@@ -962,6 +962,7 @@
                 <button id="view-btn-cook" class="btn-cook" style="flex:1; justify-content:center;"><i class="fas fa-fire"></i> Start Cooking</button>
                 <button id="view-btn-edit" class="btn-sm"><i class="fas fa-edit"></i> Edit</button>
                 <button id="view-btn-copy" class="btn-sm"><i class="far fa-copy"></i> Copy Text</button>
+                <button id="view-btn-print" class="btn-sm" onclick="printRecipe()"><i class="fas fa-print"></i> Print</button>
             </div>
 
             <div class="form-group">
@@ -1352,17 +1353,57 @@
                     showToast("Recipe imported successfully!");
                     urlInput.value = ''; // Clear input on success
                 } else {
-                    openAlertModal("Unable to extract recipe details from this link. Please enter them manually.");
+                    openAlertModal("Unable to extract recipe details. Please add manually");
                 }
 
             } catch(e) {
                 console.error(e);
-                openAlertModal("Unable to access this link. It might be blocked. Please enter details manually.");
+                openAlertModal("Unable to access this link. Please add details manually.");
             } finally {
                 btn.innerHTML = originalText;
             }
         };
         // ---------------------------------
+
+        // --- PRINT RECIPE FUNCTION ---
+        window.printRecipe = () => {
+            const title = document.getElementById('view-modal-title').innerText;
+            const ingredients = document.getElementById('view-ingredients').innerText;
+            const instructions = document.getElementById('view-instructions').innerText;
+
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write('<html><head><title>' + title + '</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('body { font-family: sans-serif; padding: 2rem; color: #333; line-height: 1.6; }');
+            printWindow.document.write('h1 { font-family: serif; border-bottom: 2px solid #5C8D89; padding-bottom: 10px; margin-bottom: 20px; }');
+            printWindow.document.write('h2 { font-size: 1.2rem; text-transform: uppercase; color: #5C8D89; margin-top: 30px; letter-spacing: 1px; }');
+            printWindow.document.write('ul { list-style: none; padding: 0; }');
+            printWindow.document.write('li { margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; }');
+            printWindow.document.write('.checkbox { width: 16px; height: 16px; border: 1px solid #ccc; display: inline-block; flex-shrink: 0; margin-top: 4px; }');
+            printWindow.document.write('</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write('<h1>' + title + '</h1>');
+            
+            printWindow.document.write('<h2>Ingredients</h2>');
+            printWindow.document.write('<ul>');
+            const ingLines = ingredients.split('\n').filter(l => l.trim());
+            ingLines.forEach(line => {
+                printWindow.document.write('<li><span class="checkbox"></span> ' + line + '</li>');
+            });
+            printWindow.document.write('</ul>');
+
+            printWindow.document.write('<h2>Instructions</h2>');
+            // Instructions are already formatted by our helper, but we might want to clean up HTML tags if needed or just dump raw text
+            // Since `view-instructions` in DOM has formatted HTML, let's grab innerHTML
+            const instHTML = document.getElementById('view-instructions').innerHTML;
+            printWindow.document.write('<div>' + instHTML + '</div>');
+
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+        };
+        // -----------------------------
 
         window.openAlertModal = (message) => {
             document.getElementById('alert-message').innerText = message;
