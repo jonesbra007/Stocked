@@ -244,7 +244,8 @@
         .cat-name { flex-grow: 1; font-weight: 500; display:flex; align-items:center; gap:8px;}
         .cat-delete { color: var(--text-light); cursor: pointer; padding: 5px; }
         .cat-delete:hover { color: var(--danger); }
-        .cat-color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink:0;}
+        .cat-color-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex-shrink:0; border: 1px solid rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        .cat-color-dot:hover { transform: scale(1.3); }
 
         /* Color Picker Styles */
         .color-picker-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
@@ -555,6 +556,10 @@
         <div class="nav-right" id="user-section" style="display:none;">
             <span class="user-greeting" id="user-greeting"></span>
             
+            <button class="nav-icon-btn" id="btn-global-save" onclick="saveAllData()" title="Save">
+                <i class="fas fa-save"></i>
+            </button>
+
             <button class="nav-icon-btn" id="btn-friends-nav" onclick="switchTab('friends')" title="Friends">
                 <i class="fas fa-user-friends"></i>
             </button>
@@ -879,19 +884,22 @@
                 <button class="modal-close-btn" onclick="closeCatManager()"><i class="fas fa-times"></i></button>
             </div>
             <div style="margin-bottom: 1rem;">
-                <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.85rem; text-transform:uppercase; color:var(--text-light);">1. Choose a Color</label>
+                <label style="display:block; margin-bottom:0.5rem; font-weight:600; font-size:0.85rem; text-transform:uppercase; color:var(--text-light);">New Category</label>
                 <div id="color-picker-container" class="color-picker-row"></div>
             </div>
             <div class="inventory-add-row" style="margin-bottom: 1rem;">
-                <input type="text" id="new-cat-name" placeholder="2. Category Name (e.g. Thai)">
+                <input type="text" id="new-cat-name" placeholder="Category Name (e.g. Thai)">
                 <button onclick="addNewCategory()"><i class="fas fa-plus"></i></button>
             </div>
-            <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:0.5rem;">Drag to reorder.</p>
+            <hr style="border:0; border-top:1px solid var(--border); margin:1.5rem 0;">
+            <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:0.5rem;">Current Categories (Click color to edit)</p>
             <ul id="manage-cat-list" class="cat-list">
-                </ul>
+            </ul>
             <div class="modal-actions">
                 <button class="primary" onclick="closeCatManager()">Done</button>
             </div>
+        </div>
+        <div id="edit-color-popup" style="display:none; position:absolute; background:var(--card-bg); padding:10px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.2); border:1px solid var(--border); z-index:1100; display:flex; gap:5px; flex-wrap:wrap; width:160px;">
         </div>
     </div>
 
@@ -1188,7 +1196,7 @@
                 swatch.style.backgroundColor = color;
                 if(idx === 0) swatch.classList.add('selected'); // Select first by default
                 swatch.onclick = () => {
-                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                    document.querySelectorAll('#color-picker-container .color-swatch').forEach(s => s.classList.remove('selected'));
                     swatch.classList.add('selected');
                     selectedColor = color;
                 };
@@ -1204,6 +1212,10 @@
         window.addEventListener('click', function(e) {
             if (!e.target.closest('.settings-btn') && !e.target.closest('.settings-dropdown')) {
                 document.getElementById('settings-dropdown').classList.remove('show');
+            }
+            // Close edit color popup
+            if (!e.target.closest('.cat-color-dot') && !e.target.closest('#edit-color-popup')) {
+                document.getElementById('edit-color-popup').style.display = 'none';
             }
         });
 
@@ -1788,6 +1800,28 @@
         async function saveMealPlanToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: mealPlan }); }
         async function saveGroceryToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: manualGrocery }); }
 
+        window.saveAllData = async () => {
+            const btn = document.getElementById('btn-global-save');
+            const icon = btn.querySelector('i');
+            icon.className = 'fas fa-spinner fa-spin';
+            
+            try {
+                await Promise.all([
+                    saveSettingsToCloud(),
+                    saveInventoryToCloud(),
+                    saveMealPlanToCloud(),
+                    saveGroceryToCloud()
+                ]);
+                showToast("All changes saved to cloud!");
+            } catch (e) {
+                console.error(e);
+                showToast("Error saving data");
+            } finally {
+                icon.className = 'fas fa-check';
+                setTimeout(() => { icon.className = 'fas fa-save'; }, 2000);
+            }
+        };
+
         window.openConfirmModal = (message, callback) => {
             document.getElementById('confirm-message').innerText = message;
             confirmCallback = callback;
@@ -1858,7 +1892,10 @@
                 li.innerHTML = `
                     <div style="display:flex; align-items:center;">
                         <span class="cat-grip"><i class="fas fa-grip-lines"></i></span>
-                        <span class="cat-name"><span class="cat-color-dot" style="background:${catObj.color}"></span> ${catObj.name}</span>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span class="cat-color-dot" style="background:${catObj.color}" onclick="openEditColor(event, ${index})"></span> 
+                            <span class="cat-name">${catObj.name}</span>
+                        </div>
                     </div>
                     <i class="fas fa-trash-alt cat-delete" onclick="deleteCategory(${index})"></i>
                 `;
@@ -1871,6 +1908,35 @@
             });
             list.appendChild(fragment);
         }
+
+        /* --- NEW: Edit Color Popup Logic --- */
+        window.openEditColor = (e, index) => {
+            e.stopPropagation();
+            const popup = document.getElementById('edit-color-popup');
+            popup.innerHTML = '';
+            
+            PRESET_COLORS.forEach(color => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = color;
+                swatch.onclick = async () => {
+                    appCategories[index].color = color;
+                    await saveSettingsToCloud();
+                    renderCatManagerList();
+                    renderDashboardFilters(); // Re-render filter pills to update color if used there
+                    renderRecipes(); // Re-render recipes to update badge colors
+                    renderMealPlan(); // Update planner colors
+                    popup.style.display = 'none';
+                };
+                popup.appendChild(swatch);
+            });
+
+            // Position popup near the clicked dot
+            const rect = e.target.getBoundingClientRect();
+            popup.style.top = (rect.bottom + window.scrollY + 5) + 'px';
+            popup.style.left = (rect.left + window.scrollX) + 'px';
+            popup.style.display = 'flex';
+        };
 
         window.addNewCategory = async () => {
             const input = document.getElementById('new-cat-name');
