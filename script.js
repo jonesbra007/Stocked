@@ -1509,3 +1509,26 @@ window.closeCookMode = () => {
 </script>
 </body>
 </html>
+
+// --- Event Listeners (The Fix) ---
+// This connects the HTML button to the JavaScript function safely
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // 1. Wire up the Login/Signup Button
+    const authBtn = document.getElementById('auth-btn');
+    if(authBtn) {
+        authBtn.addEventListener('click', () => {
+            window.handleAuth();
+        });
+    }
+
+    // 2. Allow pressing "Enter" key in the password box to log in
+    const passInput = document.getElementById('auth-password');
+    if(passInput) {
+        passInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                window.handleAuth();
+            }
+        });
+    }
+});
