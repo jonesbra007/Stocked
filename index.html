@@ -1759,28 +1759,38 @@ const PRESET_COLORS = [
             const friendsSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "friends"));
             friends = friendsSnap.exists() ? friendsSnap.data().list : [];
 
+            
+            const defaultCats = Array.isArray(appCategories) ? appCategories.map(c => ({ name: c.name, color: c.color })) : [];
             const setSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "settings"));
-            if(setSnap.exists() && setSnap.data().categories) {
-                let rawCats = setSnap.data().categories;
-                if (rawCats.length > 0 && typeof rawCats[0] === 'string') {
+            if (setSnap.exists() && setSnap.data().categories) {
+                const rawCats = setSnap.data().categories;
+
+                // Backward compatibility: older saves may be ["Italian","Mexican",...]
+                if (Array.isArray(rawCats) && rawCats.length > 0 && typeof rawCats[0] === 'string') {
                     appCategories = rawCats.map(name => {
-                        let match = appCategories.find(def => def.name === name);
-                        return { name: name, color: match ? match.color : stringToColor(name) };
+                        const def = defaultCats.find(d => d.name === name);
+                        return { name, color: def ? def.color : stringToColor(name) };
                     });
                 } else {
-                    appCategories = rawCats.map(catObj => {
-                          let defaultMatch = appCategories.find(def => def.name === catObj.name);
-                          if(defaultMatch && defaultMatch.color !== catObj.color) {
-                             return { name: catObj.name, color: defaultMatch.color }; 
-                          }
-                          return catObj;
+                    appCategories = (Array.isArray(rawCats) ? rawCats : []).map(catObj => {
+                        const name = (catObj && typeof catObj.name === 'string') ? catObj.name : String(catObj || 'Other');
+                        const savedColor = (catObj && typeof catObj.color === 'string') ? catObj.color.trim() : '';
+                        const def = defaultCats.find(d => d.name === name);
+
+                        // ✅ Prefer the user's saved color; only fall back when missing/invalid.
+                        const isValidHex = /^#([0-9A-Fa-f]{3}){1,2}$/.test(savedColor);
+                        const color = isValidHex ? savedColor : (def ? def.color : stringToColor(name));
+
+                        return { name, color };
                     });
+
+                    // Ensure at least one category exists
+                    if (!appCategories.length) appCategories = defaultCats.length ? defaultCats : [{ name: "Other", color: "#34495E" }];
                 }
             } else {
                 await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
             }
-
-            const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile"));
+const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile"));
             if(profSnap.exists()) userProfile = profSnap.data();
             else userProfile = { firstName: '', lastName: '' };
 
