@@ -1774,13 +1774,21 @@
                         return { name: name, color: match ? match.color : stringToColor(name) };
                     });
                 } else {
-                    appCategories = rawCats.map(catObj => {
-                          let defaultMatch = appCategories.find(def => def.name === catObj.name);
-                          if(defaultMatch && defaultMatch.color !== catObj.color) {
-                             return { name: catObj.name, color: defaultMatch.color }; 
-                          }
-                          return catObj;
-                    });
+                    appCategories = rawCats
+                      .map(catObj => {
+                          const name = (catObj && catObj.name ? String(catObj.name) : '').trim();
+                          if(!name) return null;
+
+                          const defaultMatch = appCategories.find(def => def.name === name);
+                          const savedColor = (catObj && typeof catObj.color === 'string' && catObj.color.trim())
+                              ? catObj.color.trim()
+                              : '';
+
+                          // Prefer the user's saved color; fall back to defaults (or deterministic color) only if missing.
+                          const color = savedColor || (defaultMatch ? defaultMatch.color : stringToColor(name));
+                          return { name, color };
+                      })
+                      .filter(Boolean);
                 }
             } else {
                 await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
