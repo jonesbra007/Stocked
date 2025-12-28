@@ -639,6 +639,10 @@
                 <h2 id="friend-cookbook-title">Friend's Cookbook</h2>
                 <button class="btn-sm" onclick="switchTab('friends')"><i class="fas fa-arrow-left"></i> Back</button>
             </div>
+                        <div class="filter-row">
+                <div class="filter-scroll" id="friend-cookbook-filters"></div>
+                <span id="friend-total-recipe-count" class="recipe-count-badge"></span>
+            </div>
             <div id="friend-recipe-grid" class="recipe-grid"></div>
         </section>
 
@@ -710,7 +714,7 @@
 
             <div class="tools-section">
                 <div class="tool-card">
-                    <div class="header-row"><h3><i class="fas fa-carrot"></i> Ingredients on Hand</h3></div>
+                    <div class="header-row"><h3><i class="fas fa-carrot"></i> Ingredients on Hand</h3><button class="btn-sm" id="btn-clear-inventory" onclick="clearInventoryConfirm()"><i class="fas fa-trash"></i> Clear</button></div>
                     <div id="inventory-list-container" class="inventory-container"></div>
                     <div class="inventory-add-row">
                         <div class="custom-select-container" id="inv-cat-select">
@@ -823,8 +827,8 @@
 
     <div id="alert-modal" class="modal-overlay">
         <div class="modal" style="max-width: 400px; text-align: center;">
-            <div style="margin-bottom: 1rem; font-size: 3rem; color: var(--accent);"><i class="fas fa-exclamation-circle"></i></div>
-            <h2 class="confirm-title" style="margin-bottom: 1rem; color: var(--text-main);">Missing Details</h2>
+            <div style="margin-bottom: 1rem; font-size: 3rem; color: var(--accent);"><i id="alert-icon-i" class="fas fa-exclamation-circle"></i></div>
+            <h2 id="alert-title" class="confirm-title" style="margin-bottom: 1rem; color: var(--text-main);">Missing Details</h2>
             <p id="alert-message" style="color: var(--text-light); margin-bottom: 2rem; font-size: 1rem;"></p>
             <div class="modal-actions" style="justify-content: center; margin-top: 0;">
                 <button class="primary" onclick="closeAlertModal()">Got it</button>
@@ -1012,6 +1016,7 @@
     </div>
 
     <script type="module">
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
@@ -1039,7 +1044,8 @@
         let manualGrocery = [];
         let friends = []; 
         
-        const PRESET_COLORS = [
+                let friendCategories = []; 
+const PRESET_COLORS = [
             '#E74C3C', '#E67E22', '#F1C40F', '#2ECC71', '#1ABC9C', 
             '#3498DB', '#9B59B6', '#E91E63', '#34495E', '#A2D729'
         ];
@@ -1068,6 +1074,7 @@
         };
 
         let currentDashboardFilter = "All";
+        let currentFriendFilter = "All";
         let currentPickerFilter = "All";
         let currentSearchQuery = "";
         let searchTimeout = null;
@@ -1445,7 +1452,11 @@
             setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
         };
 
-        window.openAlertModal = (message) => {
+        window.openAlertModal = (message, title = 'Missing Details', iconClass = 'fa-exclamation-circle') => {
+            const titleEl = document.getElementById('alert-title');
+            if (titleEl) titleEl.innerText = title;
+            const iconEl = document.getElementById('alert-icon-i');
+            if (iconEl) iconEl.className = `fas ${iconClass}`;
             document.getElementById('alert-message').innerText = message;
             document.getElementById('alert-modal').classList.add('open');
         };
@@ -1517,63 +1528,46 @@
 
         async function loadFriendCookbook(friend) {
             document.getElementById('loader').style.display = 'flex';
-            const grid = document.getElementById('friend-recipe-grid');
-            grid.innerHTML = '';
             document.getElementById('friend-cookbook-title').innerText = `${friend.firstName}'s Cookbook`;
-            friendRecipes = []; 
+            friendRecipes = [];
+            friendCategories = [];
+            currentFriendFilter = "All";
 
             try {
+                // Load friend's category colors (their settings)
+                const settingsSnap = await getDoc(doc(db, "users", friend.uid, "data", "settings"));
+                if (settingsSnap.exists() && Array.isArray(settingsSnap.data().categories)) {
+                    friendCategories = settingsSnap.data().categories;
+                } else {
+                    friendCategories = [...appCategories];
+                }
+
+                // Load friend's recipes
                 const q = query(collection(db, "users", friend.uid, "recipes"));
                 const querySnapshot = await getDocs(q);
-                
+
                 if (querySnapshot.empty) {
-                    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-light)">No recipes found.</div>';
+                    renderFriendCookbookFilters();
+                    renderFriendCookbookRecipes();
                 } else {
-                    const fragment = document.createDocumentFragment();
-                    querySnapshot.forEach((doc) => {
-                        const r = doc.data();
-                        r.id = doc.id; 
+                    querySnapshot.forEach((docSnap) => {
+                        const r = docSnap.data();
+                        r.id = docSnap.id;
+                        if (r.category && typeof r.category === 'string') r.category = [r.category];
                         friendRecipes.push(r);
-
-                        const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
-                        
-                        const card = document.createElement('div');
-                        card.className = 'recipe-card';
-                        
-                        let badgesHtml = '<div class="cat-badges">';
-                        cats.forEach(c => {
-                            const badgeColor = getColorForCategory(c);
-                            badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
-                        });
-                        badgesHtml += '</div>';
-
-                        const formattedInst = formatInstructionsHTML(r.instructions);
-
-                        card.innerHTML = `
-                            <div class="card-header">
-                                <div style="flex-grow:1;">
-                                    ${badgesHtml}
-                                    <div class="recipe-title">${r.title}</div>
-                                </div>
-                            </div>
-                            <div class="clickable-area" onclick="openViewModal('${r.id}', true)">
-                                <div class="recipe-details"><h4>Ingredients</h4><ul class="ingredient-list">${r.ingredients.split('\n').map(i=>`<li>${i}</li>`).join('')}</ul></div>
-                                <div class="recipe-details" style="flex-grow: 1;"><h4>Instructions</h4><div class="instruction-preview">${formattedInst}</div></div>
-                            </div>
-                            <div class="card-actions">
-                                 <button class="primary" style="width:100%; font-size:0.9rem;" onclick='copyFriendRecipe(${JSON.stringify(r).replace(/'/g, "&#39;")})'><i class="fas fa-download"></i> Save to My Books</button>
-                            </div>
-                        `;
-                        fragment.appendChild(card);
                     });
-                    grid.appendChild(fragment);
+                    renderFriendCookbookFilters();
+                    renderFriendCookbookRecipes();
                 }
+
                 switchTab('friend-cookbook');
-            } catch (error) {
-                console.error(error);
-                alert("Could not load recipes. Make sure your friend has updated their privacy settings (Security Rules).");
+            } catch (err) {
+                console.error(err);
+                const grid = document.getElementById('friend-recipe-grid');
+                if (grid) grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-light)">Error loading cookbook.</div>';
+            } finally {
+                document.getElementById('loader').style.display = 'none';
             }
-            document.getElementById('loader').style.display = 'none';
         }
 
         window.copyFriendRecipe = async (rData) => {
@@ -1774,21 +1768,13 @@
                         return { name: name, color: match ? match.color : stringToColor(name) };
                     });
                 } else {
-                    appCategories = rawCats
-                      .map(catObj => {
-                          const name = (catObj && catObj.name ? String(catObj.name) : '').trim();
-                          if(!name) return null;
-
-                          const defaultMatch = appCategories.find(def => def.name === name);
-                          const savedColor = (catObj && typeof catObj.color === 'string' && catObj.color.trim())
-                              ? catObj.color.trim()
-                              : '';
-
-                          // Prefer the user's saved color; fall back to defaults (or deterministic color) only if missing.
-                          const color = savedColor || (defaultMatch ? defaultMatch.color : stringToColor(name));
-                          return { name, color };
-                      })
-                      .filter(Boolean);
+                    appCategories = rawCats.map(catObj => {
+                          let defaultMatch = appCategories.find(def => def.name === catObj.name);
+                          if(defaultMatch && defaultMatch.color !== catObj.color) {
+                             return { name: catObj.name, color: defaultMatch.color }; 
+                          }
+                          return catObj;
+                    });
                 }
             } else {
                 await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
@@ -2115,6 +2101,115 @@
             return found ? found.color : stringToColor(catName);
         }
 
+        function getColorForCategoryFrom(categoryList, catName) {
+            const found = (categoryList || []).find(c => c.name === catName);
+            if (found && found.color) return found.color;
+            // fallback to app categories if friend categories missing
+            return getColorForCategory(catName);
+        }
+
+        function renderFriendCookbookFilters() {
+            const container = document.getElementById('friend-cookbook-filters');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const friendCatNames = (friendCategories || []).map(c => c.name);
+            const recipeCats = Array.from(new Set(friendRecipes.flatMap(r => {
+                const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
+                return cats.filter(Boolean);
+            })));
+
+            // Order: friend's defined categories first, then any extra categories found in recipes
+            const ordered = [...friendCatNames, ...recipeCats.filter(c => !friendCatNames.includes(c))];
+            const displayCats = ["All", ...ordered];
+
+            displayCats.forEach(catName => {
+                const btn = document.createElement('button');
+                btn.className = `filter-pill ${currentFriendFilter === catName ? 'active' : ''}`;
+                btn.innerText = catName;
+                btn.onclick = () => {
+                    currentFriendFilter = catName;
+                    renderFriendCookbookFilters();
+                    renderFriendCookbookRecipes();
+                };
+                container.appendChild(btn);
+            });
+
+            // Count badge
+            const badge = document.getElementById('friend-total-recipe-count');
+            if (badge) {
+                const count = currentFriendFilter === "All"
+                    ? friendRecipes.length
+                    : friendRecipes.filter(r => {
+                        const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
+                        return cats.includes(currentFriendFilter);
+                    }).length;
+                badge.innerText = `${count}`;
+            }
+        }
+
+        function renderFriendCookbookRecipes() {
+            const grid = document.getElementById('friend-recipe-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const list = currentFriendFilter === "All"
+                ? friendRecipes
+                : friendRecipes.filter(r => {
+                    const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
+                    return cats.includes(currentFriendFilter);
+                });
+
+            if (!list.length) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--text-light)">No recipes match this category.</div>';
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            list.forEach(r => {
+                const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
+
+                const card = document.createElement('div');
+                card.className = 'recipe-card';
+
+                let badgesHtml = '<div class="cat-badges">';
+                cats.forEach(c => {
+                    const badgeColor = getColorForCategoryFrom(friendCategories, c);
+                    badgesHtml += `<div class="cat-badge" style="background-color:${badgeColor}; color:#fff; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
+                });
+                badgesHtml += '</div>';
+
+                const formattedInst = formatInstructionsHTML(r.instructions);
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div style="flex-grow:1;">
+                            ${badgesHtml}
+                            <div class="recipe-title">${r.title}</div>
+                        </div>
+                    </div>
+                    <div class="clickable-area" onclick="openViewModal('${r.id}', true)">
+                        <div class="recipe-details">
+                            <h4>Ingredients</h4>
+                            <ul>${(r.ingredients || '').split('\n').filter(Boolean).map(i=>`<li>${i}</li>`).join('')}</ul>
+                        </div>
+                        <div class="recipe-details" style="margin-top:10px;">
+                            <h4>Instructions</h4>
+                            <div class="instruction-preview">${formattedInst}</div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="primary" style="width:100%;" onclick="event.stopPropagation(); saveFriendRecipeToMyRecipes('${r.id}');">
+                            <i class="fas fa-download"></i> Save to My Books
+                        </button>
+                    </div>
+                `;
+                fragment.appendChild(card);
+            });
+            grid.appendChild(fragment);
+        }
+
+
         window.openViewModal = (id, readOnly = false) => {
             const source = readOnly ? friendRecipes : recipes;
             const r = source.find(x => x.id === id);
@@ -2126,7 +2221,7 @@
             const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
             let badgesHtml = '';
             cats.forEach(c => {
-                const badgeColor = getColorForCategory(c);
+                const badgeColor = readOnly ? getColorForCategoryFrom(friendCategories, c) : getColorForCategory(c);
                 badgesHtml += `<div class="cat-badge" style="background-color:${badgeColor}; color:#fff; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
             });
             badgesContainer.innerHTML = badgesHtml;
@@ -2416,10 +2511,28 @@
             const cat = document.getElementById('new-item-category').value;
             if(!name) return;
             const clean = name.charAt(0).toUpperCase() + name.slice(1);
-            if(inventory.find(i=>i.name.toLowerCase()===clean.toLowerCase())) return alert("Item exists");
+            if(inventory.find(i=>i.name.toLowerCase()===clean.toLowerCase())) {
+                openAlertModal('That ingredient is already in your on-hand list.', 'Ingredient already added', 'fa-info-circle');
+                return;
+            }
             inventory.push({ name: clean, category: cat, checked: true });
             document.getElementById('new-inventory-item').value = '';
             renderInventory(); generateGroceryList(); await saveInventoryToCloud();
+        };
+
+        // Clears all "Ingredients on Hand" items (inventory) after confirmation.
+        window.clearInventoryConfirm = () => {
+            if (!inventory || inventory.length === 0) {
+                showToast('No ingredients to clear');
+                return;
+            }
+            openConfirmModal('Are you sure you want to clear all ingredients on hand?', async () => {
+                inventory = [];
+                renderInventory();
+                generateGroceryList();
+                await saveInventoryToCloud();
+                showToast('Ingredients cleared');
+            });
         };
 
         function detectCategory(name) {
@@ -2440,59 +2553,313 @@
 
         window.removeManualItem = async (idx) => { manualGrocery.splice(idx, 1); generateGroceryList(); await saveGroceryToCloud(); };
 
-        function parseIngredient(text) {
-            text = text.toLowerCase().trim();
-            text = text.replace(/^[\d\s\/\.\u00BC-\u00BE\u2150-\u215E\-]+/, '').trim();
-            const units = [ "cups", "cup", "c", "tablespoons", "tablespoon", "tbsp", "tbs", "t", "teaspoons", "teaspoon", "tsp", "ounces", "ounce", "oz", "pounds", "pound", "lbs", "lb", "grams", "gram", "g", "kilograms", "kilogram", "kg", "milliliters", "milliliter", "ml", "liters", "liter", "l", "pints", "pint", "pt", "quarts", "quart", "qt", "gallons", "gallon", "gal", "dash", "pinch", "handful", "splash", "slices", "slice", "cans", "can", "jars", "jar", "packages", "package", "pkg", "sticks", "stick", "cloves", "clove", "bunches", "bunch", "heads", "head", "stalks", "stalk" ];
-            const unitPattern = units.sort((a,b) => b.length - a.length).join('|');
-            const regex = new RegExp(`^(${unitPattern})\\b\\s*(of\\s+)?`, 'i');
-            text = text.replace(regex, '').trim();
-            return text;
-        }
+                function normalizeIngredientForMatch(name) {
+                    if(!name) return '';
+                    name = name.toLowerCase();
 
-        function generateGroceryList() {
-            let needed = [];
-            Object.values(mealPlan).forEach(p => {
-                const r = recipes.find(x => x.id === p.recipeId);
-                if(r) r.ingredients.split('\n').forEach(i => {
-                    let clean = parseIngredient(i);
-                    if(clean) needed.push(clean);
-                });
-            });
+                    // Keep size info like "(15 oz)" by inlining it before removing parentheses.
+                    name = name.replace(/\((\s*\d+(?:\.\d+)?\s*(?:oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l|liter|liters)\s*)\)/gi, ' $1 ');
 
-            const fridge = inventory.filter(i=>i.checked).map(i=>i.name.toLowerCase());
-            const finalNeeded = needed.filter(n => !fridge.includes(n));
-            const uniqueNeeded = [...new Set(finalNeeded)].map(n => ({
-                name: n.charAt(0).toUpperCase() + n.slice(1),
-                category: detectCategory(n),
-                isManual: false
-            }));
+                    // Remove remaining parentheticals and common trailing prep notes.
+                    name = name.replace(/\([^)]*\)/g, ' ');
+                    name = name.replace(/\s*,\s*(?:drained|drain|rinsed|peeled|seeded|cored|minced|diced|chopped|sliced|grated|shredded|softened|melted|room\s+temperature|divided|optional|to\s+taste|for\s+garnish|for\s+serving|plus\s+more.*|more\s+as\s+needed.*).*$/i, ' ');
 
-            const all = [...uniqueNeeded, ...manualGrocery];
-            const listEl = document.getElementById('grocery-list-output');
-            listEl.innerHTML = '';
+                    // Normalize punctuation/spaces
+                    name = name.replace(/[·•]/g, ' ');
+                    name = name.replace(/[^\w\s\/\.-]/g, ' ');
+                    name = name.replace(/\s+/g, ' ').trim();
 
-            if(all.length === 0) { listEl.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-light)">All stocked up!</div>'; return; }
+                    // Remove leading quantity/unit/container words for matching
+                    name = name.replace(/^[\d\s\/\.\u00BC-\u00BE\u2150-\u215E\-]+/, '').trim();
 
-            INVENTORY_CATEGORIES.forEach(cat => {
-                const items = all.filter(i => i.category === cat).sort((a,b)=>a.name.localeCompare(b.name));
-                if(items.length > 0) {
-                    listEl.innerHTML += `<div class="inv-category-header">${cat}</div>`;
-                    items.forEach(item => {
-                        let del = '';
-                        if(item.isManual) {
-                            const idx = manualGrocery.indexOf(item);
-                            del = `<i class="fas fa-times delete-manual" onclick="removeManualItem(${idx})"></i>`;
+                    const removeWords = new Set([
+                        'of','a','an','the','and','or','to',
+                        'fresh','large','small','medium',
+                        'finely','roughly','coarsely',
+                        'optional','divided'
+                    ]);
+                    const tokens = name.split(' ').filter(Boolean).filter(t => !removeWords.has(t));
+
+                    // Very light singularization (avoids over-aggressive stemming)
+                    const singular = tokens.map(t => {
+                        if(t.endsWith('ies') && t.length > 3) return t.slice(0,-3) + 'y';
+                        if(t.endsWith('ses') && t.length > 3) return t.slice(0,-2); // e.g., "tomatoes" -> "tomato" handled below
+                        if(t.endsWith('oes') && t.length > 3) return t.slice(0,-2); // tomatoes -> tomato
+                        if(t.endsWith('s') && !t.endsWith('ss') && t.length > 3) return t.slice(0,-1);
+                        return t;
+                    });
+
+                    return singular.join(' ').trim();
+                }
+
+
+                // Tokenize ingredient names for fuzzy matching between recipe lines and pantry items.
+                // This intentionally ignores prep notes and packaging words so "artichoke hearts (drained and chopped)"
+                // can match "artichoke hearts" (or even just "artichoke").
+                function tokenizeForMatch(name) {
+                    if(!name) return new Set();
+                    const base = normalizeIngredientForMatch(name);
+                    const stop = new Set([
+                        'oz','ounce','ounces','lb','lbs','pound','pounds','g','gram','grams','kg','ml','l','liter','liters',
+                        'cup','cups','tbsp','tablespoon','tablespoons','tsp','teaspoon','teaspoons',
+                        'can','cans','jar','jars','package','packages','pkg','pkgs','bag','bags','bottle','bottles','box','boxes',
+                        'clove','cloves','slice','slices','stick','sticks','bunch','head','handful','pinch','dash',
+                        'about','approx','approximately'
+                    ]);
+                    return new Set(
+                        base.split(' ')
+                            .map(t => t.trim())
+                            .filter(Boolean)
+                            .filter(t => t.length > 1 && !stop.has(t))
+                    );
+                }
+
+                // Lightweight disambiguation to avoid common false positives when using "any-word" matching.
+                // Example: "pepper" (black pepper) should not always match "bell pepper".
+                const DISAMBIGUATION = {
+                    pepper: ['bell','black','jalapeno','chili','cayenne','red','green'],
+                    sugar: ['brown','powdered','confectioner','granulated'],
+                    flour: ['almond','coconut','bread','allpurpose','all-purpose','wholewheat','whole-wheat'],
+                    milk: ['almond','oat','soy','coconut','skim','whole','2','2%'],
+                    oil: ['olive','vegetable','canola','sesame','coconut'],
+                    cheese: ['parmesan','mozzarella','cheddar','feta','goat','cream']
+                };
+
+                function disambiguationAllowsMatch(aTokens, bTokens) {
+                    for (const base in DISAMBIGUATION) {
+                        if(aTokens.has(base) && bTokens.has(base)) {
+                            const quals = DISAMBIGUATION[base];
+                            const aQ = quals.filter(q => aTokens.has(q));
+                            const bQ = quals.filter(q => bTokens.has(q));
+
+                            // If neither side specifies a qualifier, allow.
+                            if(aQ.length === 0 && bQ.length === 0) continue;
+
+                            // If one specifies a qualifier and the other does not, block match.
+                            if(aQ.length === 0 || bQ.length === 0) return false;
+
+                            // If both specify qualifiers but none overlap, block match.
+                            const overlap = aQ.some(q => bQ.includes(q));
+                            if(!overlap) return false;
                         }
-                        listEl.innerHTML += `
-                            <div class="grocery-item ${item.isManual?'manual-item':''}">
-                                <input type="checkbox"> <label>${item.name}</label> ${del}
-                            </div>
-                        `;
+                    }
+                    return true;
+                }
+
+                function isOnHandMatch(neededObj, onHandObj) {
+                    if(!neededObj || !neededObj.key || !onHandObj || !onHandObj.key) return false;
+
+                    // Exact normalized key match first (fast path).
+                    if(neededObj.key === onHandObj.key) return true;
+
+                    const a = neededObj._tokens || (neededObj._tokens = tokenizeForMatch(neededObj.item || neededObj.display || neededObj.key));
+                    const b = onHandObj.tokens;
+
+                    // Guardrails for ambiguous base words (pepper/sugar/etc.)
+                    if(!disambiguationAllowsMatch(a, b)) return false;
+
+                    // "Any meaningful word" overlap matches.
+                    for(const t of a) {
+                        if(b.has(t)) return true;
+                    }
+                    return false;
+                }
+
+                function parseIngredientLine(text) {
+                    if(!text) return null;
+                    let raw = String(text).trim();
+                    if(!raw) return null;
+
+                    // Remove bullets
+                    raw = raw.replace(/^[\-\*\u2022]\s*/, '');
+
+                    // Inline size parentheses like "(15 oz)"
+                    raw = raw.replace(/\((\s*\d+(?:\.\d+)?\s*(?:oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l|liter|liters)\s*)\)/gi, ' $1 ');
+
+                    // Remove remaining parentheticals and trailing prep notes
+                    let cleaned = raw.replace(/\([^)]*\)/g, ' ');
+                    cleaned = cleaned.replace(/\s*,\s*(?:drained|drain|rinsed|peeled|seeded|cored|minced|diced|chopped|sliced|grated|shredded|softened|melted|room\s+temperature|divided|optional|to\s+taste|for\s+garnish|for\s+serving|plus\s+more.*|more\s+as\s+needed.*).*$/i, ' ');
+                    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+                    // Normalize patterns like "14-ounce" or "14oz"
+                    cleaned = cleaned.replace(/(\d)\s*-\s*(?=[a-zA-Z])/g, '$1 ');
+                    cleaned = cleaned.replace(/(\d)(oz|lb|g|kg|ml|l)\b/gi, '$1 $2');
+
+                    let qty = '';
+                    let packSize = '';
+                    let unit = '';
+                    let container = '';
+
+                    // Capture leading quantity (supports "1 1/2", "1/2", unicode fractions)
+                    const qtyMatch = cleaned.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?|[¼½¾⅓⅔⅛⅜⅝⅞]+)(?:\s*(?:-|to)\s*(\d+(?:\.\d+)?|\d+\/\d+))?\b/i);
+                    if(qtyMatch) {
+                        qty = qtyMatch[0].trim();
+                        cleaned = cleaned.slice(qtyMatch[0].length).trim();
+                    }
+
+                    // Capture pack size like "15 oz" that comes after quantity: "2 15 oz cans ..."
+                    const packMatch = cleaned.match(/^(\d+(?:\.\d+)?|\d+\/\d+)\s*(oz|ounce|ounces|lb|lbs|pound|pounds|g|gram|grams|kg|ml|l|liter|liters)\b/i);
+                    if(packMatch) {
+                        const u = packMatch[2].toLowerCase();
+                        const uNorm = (u.startsWith('ounce') || u === 'oz') ? 'oz'
+                                    : (u.startsWith('pound') || u === 'lb' || u === 'lbs') ? 'lb'
+                                    : (u === 'gram' || u === 'grams' || u === 'g') ? 'g'
+                                    : (u === 'kilogram' || u === 'kg') ? 'kg'
+                                    : (u === 'milliliter' || u === 'ml') ? 'ml'
+                                    : (u.startsWith('liter') || u === 'l') ? 'l'
+                                    : u;
+                        packSize = `${packMatch[1]} ${uNorm}`.trim();
+                        cleaned = cleaned.slice(packMatch[0].length).trim();
+                    }
+
+                    // Units + containers
+                    const measurementUnits = [
+                        'teaspoon','teaspoons','tsp',
+                        'tablespoon','tablespoons','tbsp',
+                        'cup','cups','c',
+                        'ounce','ounces','oz',
+                        'pound','pounds','lb','lbs',
+                        'gram','grams','g',
+                        'kilogram','kilograms','kg',
+                        'milliliter','milliliters','ml',
+                        'liter','liters','l'
+                    ];
+                    const containerUnits = [
+                        'can','cans','jar','jars','bottle','bottles','package','packages','pkg','pkgs',
+                        'bag','bags','box','boxes','bunch','bunches','head','heads','clove','cloves',
+                        'slice','slices','stick','sticks','sprig','sprigs'
+                    ];
+
+                    // If the next word is a measurement unit, capture it (e.g., "14 oz")
+                    const firstWord = (cleaned.split(' ')[0] || '').toLowerCase();
+                    if(measurementUnits.includes(firstWord)) {
+                        const u = firstWord;
+                        unit = (u.startsWith('ounce') || u === 'oz') ? 'oz'
+                             : (u.startsWith('pound') || u === 'lb' || u === 'lbs') ? 'lb'
+                             : (u.startsWith('tablespoon') || u === 'tbsp') ? 'tbsp'
+                             : (u.startsWith('teaspoon') || u === 'tsp') ? 'tsp'
+                             : (u === 'c') ? 'cup'
+                             : (u.startsWith('gram') || u === 'g') ? 'g'
+                             : (u.startsWith('kilogram') || u === 'kg') ? 'kg'
+                             : (u.startsWith('milliliter') || u === 'ml') ? 'ml'
+                             : (u.startsWith('liter') || u === 'l') ? 'l'
+                             : u;
+                        cleaned = cleaned.split(' ').slice(1).join(' ').trim();
+                    }
+
+                    // If the next word is a container, capture it (e.g., "can", "jar")
+                    const nextWord = (cleaned.split(' ')[0] || '').toLowerCase();
+                    if(containerUnits.includes(nextWord)) {
+                        container = nextWord === 'pkgs' ? 'pkg' : nextWord;
+                        cleaned = cleaned.split(' ').slice(1).join(' ').trim();
+                    }
+
+                    // Remove optional "of"
+                    cleaned = cleaned.replace(/^of\s+/i, '').trim();
+
+                    // Ingredient name (what remains)
+                    const item = cleaned.replace(/\s+/g, ' ').trim();
+                    if(!item) return null;
+
+                    // Display string: keep quantity + size + unit/container, but remove prep notes
+                    let displayParts = [];
+                    if(qty) displayParts.push(qty);
+                    if(packSize) displayParts.push(packSize);
+                    if(unit) displayParts.push(unit);
+                    if(container) displayParts.push(container);
+
+                    let display = '';
+                    if(displayParts.length > 0) {
+                        display = displayParts.join(' ');
+                        // Use "of" after container/measurements when it reads naturally
+                        const needsOf = container || unit || packSize;
+                        display += needsOf ? ` of ${item}` : ` ${item}`;
+                    } else {
+                        display = item;
+                    }
+                    display = display.replace(/\s+/g, ' ').trim();
+
+                    const key = normalizeIngredientForMatch(item);
+                    return { raw, item, display, key };
+                }
+
+                // Backward-compatible helper (returns just the matching key)
+                function parseIngredient(text) {
+                    const obj = parseIngredientLine(text);
+                    return obj ? obj.key : '';
+                }
+
+                function generateGroceryList() {
+                    let needed = [];
+                    Object.values(mealPlan).forEach(p => {
+                        const r = recipes.find(x => x.id === p.recipeId);
+                        if(r) {
+                            (r.ingredients || '').split('\n').forEach(line => {
+                                const parsed = parseIngredientLine(line);
+                                if(parsed && parsed.key) needed.push(parsed);
+                            });
+                        }
+                    });
+
+                    // Compare against on-hand inventory using normalized matching keys (not exact strings).
+                    // Compare against on-hand inventory using fuzzy token matching (not exact strings).
+                    const onHandItems = inventory
+                        .filter(i => i.checked)
+                        .map(i => {
+                            const p = parseIngredientLine(i.name);
+                            if(!p || !p.key) return null;
+                            return { key: p.key, tokens: tokenizeForMatch(p.item || p.display || p.key) };
+                        })
+                        .filter(Boolean);
+
+                    const finalNeeded = needed.filter(n => !onHandItems.some(h => isOnHandMatch(n, h)));
+
+                    // De-duplicate by normalized key while preserving a clean display string.
+                    const uniqueMap = new Map();
+                    finalNeeded.forEach(n => {
+                        if(!uniqueMap.has(n.key)) uniqueMap.set(n.key, n);
+                    });
+
+                    const uniqueNeeded = Array.from(uniqueMap.values()).map(n => {
+                        const display = n.display || n.item || n.raw || '';
+                        const name = (/^\d/.test(display) || !display) ? display : (display.charAt(0).toUpperCase() + display.slice(1));
+                        return {
+                            name,
+                            category: detectCategory(n.item || display),
+                            isManual: false,
+                            _key: n.key
+                        };
+                    });
+
+                    const all = [...uniqueNeeded, ...manualGrocery];
+                    const listEl = document.getElementById('grocery-list-output');
+                    listEl.innerHTML = '';
+
+                    if(all.length === 0) {
+                        listEl.innerHTML = '<div style="padding:1rem; color:var(--text-light)">All stocked up!</div>';
+                        return;
+                    }
+
+                    INVENTORY_CATEGORIES.forEach(cat => {
+                        const items = all.filter(i => i.category === cat).sort((a,b)=>a.name.localeCompare(b.name));
+                        if(items.length > 0) {
+                            listEl.innerHTML += `<div class="inv-category-header">${cat}</div>`;
+                            items.forEach(item => {
+                                let del = '';
+                                if(item.isManual) {
+                                    const idx = manualGrocery.indexOf(item);
+                                    del = `<i class="fas fa-times delete-manual" onclick="removeManualItem(${idx})"></i>`;
+                                }
+                                listEl.innerHTML += `
+                                    <div class="grocery-item ${item.isManual?'manual-item':''}">
+                                        <input type="checkbox"> <label>${item.name}</label> ${del}
+                                    </div>
+                                `;
+                            });
+                        }
                     });
                 }
-            });
-        }
+
 
         window.copyGroceryList = () => {
             const listContainer = document.getElementById('grocery-list-output');
@@ -2567,6 +2934,7 @@ r.innerHTML += `<div class="cook-list-item" onclick="this.classList.toggle('done
             if (wakeLock) wakeLock.release().then(()=>wakeLock=null);
         };
 
+    
     </script>
 </body>
 </html>
