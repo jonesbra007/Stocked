@@ -2107,29 +2107,46 @@
             return found ? found.color : stringToColor(catName);
         }
 
-        window.openViewModal = (id) => {
-            const r = recipes.find(x => x.id === id);
+        window.openViewModal = (id, readOnly = false) => {
+            const source = readOnly ? friendRecipes : recipes;
+            const r = source.find(x => x.id === id);
             if(!r) return;
 
             document.getElementById('view-modal-title').innerText = r.title;
-            
+
             const badgesContainer = document.getElementById('view-modal-badges');
             const cats = Array.isArray(r.category) ? r.category : [r.category || 'Other'];
             let badgesHtml = '';
             cats.forEach(c => {
                 const badgeColor = getColorForCategory(c);
-                badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
+                badgesHtml += `<div class="cat-badge" style="background-color:${badgeColor}; color:#fff; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
             });
             badgesContainer.innerHTML = badgesHtml;
-            
+
             const ingList = document.getElementById('view-ingredients');
             const multiplier = r.currentMultiplier || 1.0;
             ingList.innerHTML = formatScaledIngredients(r.ingredients, multiplier);
 
             document.getElementById('view-instructions').innerHTML = formatInstructionsHTML(r.instructions);
 
-            document.getElementById('view-btn-cook').onclick = () => { closeViewModal(); openCookMode(r.id); };
-            document.getElementById('view-btn-edit').onclick = () => { closeViewModal(); editRecipe(r.id); };
+            const editBtn = document.getElementById('view-btn-edit');
+            editBtn.style.display = readOnly ? 'none' : 'inline-flex';
+
+            document.getElementById('view-btn-cook').onclick = () => { 
+                closeViewModal(); 
+                if (readOnly) {
+                    openCookModeFromData(r);
+                } else {
+                    openCookMode(r.id);
+                }
+            };
+
+            if (!readOnly) {
+                editBtn.onclick = () => { closeViewModal(); editRecipe(r.id); };
+            } else {
+                editBtn.onclick = null;
+            }
+
             document.getElementById('view-btn-copy').onclick = () => {
                 const text = `${r.title}\n\nINGREDIENTS:\n${r.ingredients}\n\nINSTRUCTIONS:\n${r.instructions}`;
                 navigator.clipboard.writeText(text);
@@ -2510,7 +2527,29 @@
             const instContainer = document.getElementById('cook-instructions');
             instContainer.innerHTML = '';
             r.instructions.split('\n').filter(i=>i.trim()).forEach(inst => {
-                instContainer.innerHTML += `<div class="cook-list-item" onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked"><input type="checkbox"><span>${inst}</span></div>`;
+                instContaine
+        // Opens Cook Mode using a recipe object (used for read-only / friend recipes)
+        window.openCookModeFromData = (r) => {
+            if (!r) return;
+            document.getElementById('cook-title').innerText = r.title || '';
+
+            const ingContainer = document.getElementById('cook-ingredients');
+            ingContainer.innerHTML = '';
+
+            (r.ingredients || '').split('\n').filter(Boolean).forEach(line => {
+                ingContainer.innerHTML += `
+                    <div class="cook-list-item"
+                         onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked">
+                      <input type="checkbox"><span>${line}</span>
+                    </div>`;
+            });
+
+            const instContainer = document.getElementById('cook-instructions');
+            instContainer.innerHTML = formatInstructionsHTML(r.instructions || '');
+
+            document.getElementById('cook-mode-overlay').classList.add('active');
+        };
+r.innerHTML += `<div class="cook-list-item" onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked"><input type="checkbox"><span>${inst}</span></div>`;
             });
             document.getElementById('cook-mode-overlay').classList.add('active');
             try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => wakeLock = w); } catch(e){}
@@ -2523,3 +2562,4 @@
     </script>
 </body>
 </html>
+
