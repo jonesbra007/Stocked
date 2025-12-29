@@ -470,6 +470,57 @@
         .cook-list-item input { transform: scale(1.5); margin-top: 6px; accent-color: var(--primary); }
         .cook-list-item.done { text-decoration: line-through; color: var(--text-light); }
 
+
+        /* --- COOK MODE (V2) - BIG CHECKLIST + STEP TIMERS --- */
+        .cook-toggle { 
+            display: flex; align-items: flex-start; gap: 14px; 
+            cursor: pointer; padding: 0.75rem; border-radius: 12px; transition: 0.2s;
+            color: var(--text-main);
+        }
+        .cook-toggle:hover { background: var(--slot-bg); }
+        .cook-toggle input { transform: scale(1.85); margin-top: 6px; accent-color: var(--primary); flex: 0 0 auto; }
+        .cook-item-text { font-size: 1.45rem; line-height: 1.7; }
+        .cook-toggle.done { text-decoration: line-through; color: var(--text-light); }
+
+        .cook-step-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 1.25rem; }
+        .cook-step-main { flex: 1; }
+        .cook-step-num { 
+            width: 34px; height: 34px; border-radius: 12px; background: var(--hover-bg);
+            display: flex; align-items: center; justify-content: center; font-weight: 800;
+            color: var(--primary); margin-top: 2px; flex: 0 0 auto;
+        }
+
+        .cook-timer { 
+            min-width: 270px; max-width: 340px;
+            background: var(--card-bg); border: var(--border); border-radius: 16px;
+            padding: 0.85rem 0.9rem; box-shadow: 0 8px 18px rgba(0,0,0,0.06);
+            display: flex; flex-direction: column; gap: 0.7rem;
+        }
+        .cook-timer.running { box-shadow: 0 0 0 3px rgba(92, 141, 137, 0.18), 0 8px 18px rgba(0,0,0,0.06); }
+        .cook-timer.finished { box-shadow: 0 0 0 3px rgba(217, 125, 93, 0.25), 0 8px 18px rgba(0,0,0,0.06); }
+        .cook-timer-display { 
+            font-size: 1.55rem; font-weight: 900; letter-spacing: 1px;
+            font-variant-numeric: tabular-nums; color: var(--text-main);
+        }
+        .cook-timer-controls { display: flex; gap: 8px; }
+        .timer-btn {
+            flex: 1; border: none; background: var(--hover-bg); color: var(--text-main);
+            font-weight: 800; padding: 0.55rem 0.7rem; border-radius: 12px; cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 0.95rem; transition: 0.2s;
+        }
+        .timer-btn.primary { background: var(--primary); color: #fff; }
+        .timer-btn.primary:hover { background: var(--primary-dark); }
+        .timer-btn:hover { background: var(--border); }
+        .timer-btn:active { transform: translateY(1px); }
+
+        @media(max-width: 768px) {
+            .cook-item-text { font-size: 1.25rem; }
+            .cook-step-row { flex-direction: column; }
+            .cook-timer { min-width: 100%; max-width: 100%; }
+        }
+
+
         #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--nav-bg); z-index: 3000; justify-content: center; align-items: center; font-size: 2rem; color: var(--primary); }
 
         /* --- MOBILE RESPONSIVE QUERIES --- */
@@ -2890,62 +2941,345 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
             });
         };
 
+        
+        // --- COOK MODE (Fullscreen) with BIG CHECKLIST + STEP TIMERS ---
+        const cookTimers = new Map();
+        let cookModeEventsBound = false;
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, s => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+            }[s]));
+        }
+
+        function formatTime(totalSeconds) {
+            const s = Math.max(0, Math.floor(totalSeconds || 0));
+            const hrs = Math.floor(s / 3600);
+            const mins = Math.floor((s % 3600) / 60);
+            const secs = s % 60;
+            const pad2 = (n) => String(n).padStart(2, '0');
+            return hrs > 0 ? `${hrs}:${pad2(mins)}:${pad2(secs)}` : `${pad2(mins)}:${pad2(secs)}`;
+        }
+
+        function parseDurationSeconds(text) {
+            const t = (text || '').toLowerCase();
+
+            // Ranges like "20-25 minutes" or "20 to 25 min" (use the upper bound)
+            const range = t.match(/(\d+)\s*(?:-|to)\s*(\d+)\s*(hours?|hrs?|hr|h|minutes?|mins?|min|m|seconds?|secs?|sec|s)\b/);
+            if (range) {
+                const val = parseInt(range[2], 10);
+                const unit = range[3];
+                if (unit.startsWith('h')) return { seconds: val * 3600, label: range[0] };
+                if (unit.startsWith('m')) return { seconds: val * 60, label: range[0] };
+                return { seconds: val, label: range[0] };
+            }
+
+            const h = t.match(/(\d+)\s*(hours?|hrs?|hr|h)\b/);
+            const m = t.match(/(\d+)\s*(minutes?|mins?|min|m)\b/);
+            const s = t.match(/(\d+)\s*(seconds?|secs?|sec|s)\b/);
+
+            const hours = h ? parseInt(h[1], 10) : 0;
+            const minutes = m ? parseInt(m[1], 10) : 0;
+            const seconds = s ? parseInt(s[1], 10) : 0;
+
+            const total = hours * 3600 + minutes * 60 + seconds;
+            if (total > 0) {
+                const label = [h?.[0], m?.[0], s?.[0]].filter(Boolean).join(' ');
+                return { seconds: total, label: label || '' };
+            }
+            return null;
+        }
+
+        function playTimerDoneSignal() {
+            // Lightweight beep + optional vibration (safe no-op if unsupported)
+            try {
+                if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
+            } catch(e) {}
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = 'sine';
+                o.frequency.value = 880;
+                g.gain.value = 0.05;
+                o.connect(g);
+                g.connect(ctx.destination);
+                o.start();
+                setTimeout(() => { o.stop(); ctx.close(); }, 250);
+            } catch(e) {}
+        }
+
+        function clearAllCookTimers() {
+            cookTimers.forEach(state => {
+                if (state.interval) clearInterval(state.interval);
+            });
+            cookTimers.clear();
+        }
+
+        function setTimerUI(timerId) {
+            const state = cookTimers.get(timerId);
+            if (!state) return;
+
+            const wrap = document.querySelector(`.cook-timer[data-timer-id="${timerId}"]`);
+            if (!wrap) return;
+
+            const display = wrap.querySelector('.cook-timer-display');
+            if (display) display.textContent = formatTime(state.remaining);
+
+            wrap.classList.toggle('running', !!state.running);
+            wrap.classList.toggle('finished', state.remaining === 0);
+        }
+
+        function startCookTimer(timerId) {
+            const state = cookTimers.get(timerId);
+            if (!state || state.running || state.remaining <= 0) return;
+
+            state.running = true;
+            setTimerUI(timerId);
+
+            state.interval = setInterval(() => {
+                state.remaining = Math.max(0, state.remaining - 1);
+                setTimerUI(timerId);
+
+                if (state.remaining === 0) {
+                    pauseCookTimer(timerId);
+                    showToast(`${state.label || 'Timer'} done`);
+                    playTimerDoneSignal();
+                }
+            }, 1000);
+        }
+
+        function pauseCookTimer(timerId) {
+            const state = cookTimers.get(timerId);
+            if (!state) return;
+
+            if (state.interval) clearInterval(state.interval);
+            state.interval = null;
+            state.running = false;
+            setTimerUI(timerId);
+        }
+
+        function restartCookTimer(timerId) {
+            const state = cookTimers.get(timerId);
+            if (!state) return;
+
+            pauseCookTimer(timerId);
+            state.remaining = state.initial;
+            setTimerUI(timerId);
+        }
+
+        function bindCookModeEvents() {
+            if (cookModeEventsBound) return;
+            cookModeEventsBound = true;
+
+            const overlay = document.getElementById('cook-mode-overlay');
+            if (!overlay) return;
+
+            overlay.addEventListener('click', (e) => {
+                // Timer buttons
+                const btn = e.target.closest('[data-timer-action][data-timer-id]');
+                if (btn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const action = btn.dataset.timerAction;
+                    const timerId = btn.dataset.timerId;
+                    if (action === 'start') startCookTimer(timerId);
+                    if (action === 'pause') pauseCookTimer(timerId);
+                    if (action === 'restart') restartCookTimer(timerId);
+                    return;
+                }
+
+                // Checklist toggle (ignore clicks inside timer area)
+                if (e.target.closest('.cook-timer')) return;
+
+                const toggle = e.target.closest('.cook-toggle');
+                if (!toggle) return;
+
+                const checkbox = toggle.querySelector('input[type="checkbox"]');
+                if (!checkbox) return;
+
+                // If user clicked the checkbox directly, let it toggle naturally and then sync styles.
+                if (e.target === checkbox) {
+                    toggle.classList.toggle('done', checkbox.checked);
+                    return;
+                }
+
+                checkbox.checked = !checkbox.checked;
+                toggle.classList.toggle('done', checkbox.checked);
+            });
+        }
+
+        function safeId(str) {
+            return String(str || '').replace(/[^a-z0-9_-]/gi, '_');
+        }
+
+
+        function createCookChecklistItem(text) {
+            const item = document.createElement('div');
+            item.className = 'cook-toggle';
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'cook-checkbox';
+
+            const span = document.createElement('span');
+            span.className = 'cook-item-text';
+            span.textContent = text;
+
+            item.appendChild(cb);
+            item.appendChild(span);
+            return item;
+        }
+
+        function createTimerElement(timerId, initialSeconds) {
+            const wrap = document.createElement('div');
+            wrap.className = 'cook-timer';
+            wrap.dataset.timerId = timerId;
+
+            const display = document.createElement('div');
+            display.className = 'cook-timer-display';
+            display.textContent = formatTime(initialSeconds);
+
+            const controls = document.createElement('div');
+            controls.className = 'cook-timer-controls';
+
+            const startBtn = document.createElement('button');
+            startBtn.type = 'button';
+            startBtn.className = 'timer-btn primary';
+            startBtn.dataset.timerAction = 'start';
+            startBtn.dataset.timerId = timerId;
+            startBtn.innerHTML = `<i class="fas fa-play"></i> Start`;
+
+            const pauseBtn = document.createElement('button');
+            pauseBtn.type = 'button';
+            pauseBtn.className = 'timer-btn';
+            pauseBtn.dataset.timerAction = 'pause';
+            pauseBtn.dataset.timerId = timerId;
+            pauseBtn.innerHTML = `<i class="fas fa-pause"></i> Pause`;
+
+            const restartBtn = document.createElement('button');
+            restartBtn.type = 'button';
+            restartBtn.className = 'timer-btn';
+            restartBtn.dataset.timerAction = 'restart';
+            restartBtn.dataset.timerId = timerId;
+            restartBtn.innerHTML = `<i class="fas fa-rotate-left"></i> Restart`;
+
+            controls.appendChild(startBtn);
+            controls.appendChild(pauseBtn);
+            controls.appendChild(restartBtn);
+
+            wrap.appendChild(display);
+            wrap.appendChild(controls);
+            return wrap;
+        }
+
+        function createCookInstructionRow(stepText, stepIndex, recipeKey) {
+            const row = document.createElement('div');
+            row.className = 'cook-step-row';
+
+            const main = document.createElement('div');
+            main.className = 'cook-toggle cook-step-main';
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'cook-checkbox';
+
+            const num = document.createElement('div');
+            num.className = 'cook-step-num';
+            num.textContent = String(stepIndex + 1);
+
+            const span = document.createElement('span');
+            span.className = 'cook-item-text';
+            span.textContent = stepText;
+
+            main.appendChild(cb);
+            main.appendChild(num);
+            main.appendChild(span);
+
+            row.appendChild(main);
+
+            const dur = parseDurationSeconds(stepText);
+            if (dur && dur.seconds >= 30) { // ignore very short times
+                const timerId = `${safeId(recipeKey)}-step-${stepIndex}`;
+                cookTimers.set(timerId, {
+                    initial: dur.seconds,
+                    remaining: dur.seconds,
+                    interval: null,
+                    running: false,
+                    label: `Step ${stepIndex + 1}`
+                });
+
+                const timerEl = createTimerElement(timerId, dur.seconds);
+                row.appendChild(timerEl);
+                setTimerUI(timerId);
+            }
+
+            return row;
+        }
+
+        function openCookModeWithRecipeData(r, { scaledIngredientsHtml = null, recipeKey = null } = {}) {
+            if (!r) return;
+
+            bindCookModeEvents();
+            clearAllCookTimers();
+
+            const title = (r.title || '').trim();
+            document.getElementById('cook-title').innerText = title || 'Recipe';
+
+            const ingContainer = document.getElementById('cook-ingredients');
+            const instContainer = document.getElementById('cook-instructions');
+            ingContainer.innerHTML = '';
+            instContainer.innerHTML = '';
+
+            // Ingredients
+            let ingLines = [];
+            if (scaledIngredientsHtml) {
+                const temp = document.createElement('div');
+                temp.innerHTML = scaledIngredientsHtml;
+                ingLines = Array.from(temp.querySelectorAll('li')).map(li => li.textContent.trim()).filter(Boolean);
+            } else {
+                ingLines = (r.ingredients || '').split('\n').map(x => x.trim()).filter(Boolean);
+            }
+            ingLines.forEach(line => ingContainer.appendChild(createCookChecklistItem(line)));
+
+            // Instructions (one per line)
+            const steps = (r.instructions || '').split('\n').map(x => x.trim()).filter(Boolean);
+            const key = safeId(recipeKey || (r.id ? `recipe-${r.id}` : `recipe-${Date.now()}`));
+            steps.forEach((step, idx) => instContainer.appendChild(createCookInstructionRow(step, idx, key)));
+
+            document.getElementById('cook-mode-overlay').classList.add('active');
+
+            // Keep screen awake while cooking
+            try {
+                if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => wakeLock = w);
+            } catch(e) {}
+        }
+
         window.openCookMode = (id) => {
             const r = recipes.find(x => x.id == id);
             if (!r) return;
-            const currentMult = r.currentMultiplier || 1.0;
-            
-            document.getElementById('cook-title').innerText = r.title;
-            const ingContainer = document.getElementById('cook-ingredients');
-            
-            const scaledHtml = formatScaledIngredients(r.ingredients, currentMult);
-            
-            ingContainer.innerHTML = '';
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = scaledHtml;
-            const items = tempDiv.querySelectorAll('li');
-            
-            items.forEach(li => {
-               ingContainer.innerHTML += `<div class="cook-list-item" onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked"><input type="checkbox"><span>${li.innerText}</span></div>`;
-            });
 
-            const instContainer = document.getElementById('cook-instructions');
-            instContainer.innerHTML = '';
-            r.instructions.split('\n').filter(i=>i.trim()).forEach(inst => {
-                instContaine
+            const currentMult = r.currentMultiplier || 1.0;
+            const scaledHtml = formatScaledIngredients(r.ingredients, currentMult);
+            openCookModeWithRecipeData(r, { scaledIngredientsHtml: scaledHtml, recipeKey: `recipe-${r.id}` });
+        };
+
         // Opens Cook Mode using a recipe object (used for read-only / friend recipes)
         window.openCookModeFromData = (r) => {
-            if (!r) return;
-            document.getElementById('cook-title').innerText = r.title || '';
-
-            const ingContainer = document.getElementById('cook-ingredients');
-            ingContainer.innerHTML = '';
-
-            (r.ingredients || '').split('\n').filter(Boolean).forEach(line => {
-                ingContainer.innerHTML += `
-                    <div class="cook-list-item"
-                         onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked">
-                      <input type="checkbox"><span>${line}</span>
-                    </div>`;
-            });
-
-            const instContainer = document.getElementById('cook-instructions');
-            instContainer.innerHTML = formatInstructionsHTML(r.instructions || '');
-
-            document.getElementById('cook-mode-overlay').classList.add('active');
+            openCookModeWithRecipeData(r, { recipeKey: safeId(`friend-${r.id || (r.title || 'recipe')}`) });
         };
-r.innerHTML += `<div class="cook-list-item" onclick="this.classList.toggle('done'); this.querySelector('input').checked = !this.querySelector('input').checked"><input type="checkbox"><span>${inst}</span></div>`;
-            });
-            document.getElementById('cook-mode-overlay').classList.add('active');
-            try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(w => wakeLock = w); } catch(e){}
-        };
+
         window.closeCookMode = () => {
             document.getElementById('cook-mode-overlay').classList.remove('active');
-            if (wakeLock) wakeLock.release().then(()=>wakeLock=null);
+            clearAllCookTimers();
+            if (wakeLock) wakeLock.release().then(() => wakeLock = null);
         };
 
-    
+
     </script>
 </body>
 </html>
+
 
