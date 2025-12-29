@@ -187,6 +187,8 @@
 
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
         .header-row h3, .header-row h2 { margin-bottom: 0; border: none; padding: 0; color: var(--text-main); }
+        /* Group right-side header buttons so they stay together (Copy, Edit, etc.) */
+        .header-actions { display: flex; align-items: center; gap: 0.5rem; }
         
         .btn-sm {
             padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid #D1D5DB; 
@@ -369,6 +371,34 @@
         .btn-cook { background: var(--primary); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; z-index: 2; }
         .btn-cook:hover { background: var(--primary-dark); }
         .expand-hint { font-size: 0.75rem; color: var(--text-light); transition: 0.3s; font-weight: 500; }
+        /* Dashboard: "Plan" button on recipe cards */
+        .btn-plan {
+            background: var(--hover-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.6rem 1rem;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+            z-index: 2;
+        }
+        .btn-plan:hover { background: var(--border); }
+
+        /* Add-to-Planner modal */
+        .addplan-section-title { 
+            font-size: 0.95rem; 
+            font-weight: 800; 
+            letter-spacing: 0.3px; 
+            color: var(--text-light); 
+            margin: 1rem 0 0.5rem; 
+            text-transform: uppercase;
+        }
+        .addplan-type-grid { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+
 
         /* --- UPDATED PLANNER GRID V.08 --- */
         .planner-grid { 
@@ -416,7 +446,69 @@
         .delete-manual { font-size: 0.8rem; color: #bbb; cursor: pointer; margin-left: 8px;}
         .delete-manual:hover { color: var(--accent); }
         
-        .inventory-add-row { display: flex; gap: 0.5rem; align-items: center; }
+        
+
+        /* Grocery list category editing (move items between categories) */
+        .btn-sm.active { background: var(--primary); color: #fff; border-color: transparent; }
+        .groc-cat-edit {
+            margin-left: 0.75rem;
+            padding: 0.35rem 0.6rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            height: 34px;
+        }
+        .groc-cat-edit:focus { outline: none; box-shadow: 0 0 0 3px rgba(92,141,137,0.18); }
+
+        /* Grocery category editor modal */
+        #grocery-edit-modal .modal { max-width: 920px; width: min(920px, 94vw); max-height: 86vh; display: flex; flex-direction: column; }
+        #grocery-edit-modal .modal .modal-actions { margin-top: 1rem; }
+        .grocery-edit-hint { color: var(--text-light); font-size: 0.9rem; margin-top: 0.25rem; }
+        .grocery-edit-list { margin-top: 1rem; overflow: auto; padding-right: 6px; }
+
+        /* Category sections act as drop targets */
+        .grocery-edit-category { border-radius: 14px; padding: 0.25rem 0.9rem 0.75rem; }
+        .grocery-edit-category.drag-over {
+            background: rgba(92,141,137,0.10);
+            outline: 2px dashed rgba(92,141,137,0.45);
+            outline-offset: -8px;
+        }
+
+        .grocery-edit-dropzone { padding-top: 0.25rem; }
+
+        .grocery-edit-row {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 0.75rem 0; border-bottom: 1px solid var(--border);
+        }
+        .grocery-edit-row:last-child { border-bottom: none; }
+        .grocery-edit-row.dragging { opacity: 0.55; }
+
+        .grocery-edit-drag {
+            width: 28px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 4px;
+            color: var(--text-light);
+            cursor: grab;
+            user-select: none;
+            flex: 0 0 28px;
+        }
+        .grocery-edit-drag:active { cursor: grabbing; }
+
+        .grocery-edit-name { flex: 1; font-size: 0.95rem; color: var(--text-main); }
+        .grocery-edit-meta { color: var(--text-light); font-size: 0.8rem; margin-top: 2px; }
+        .grocery-edit-select { width: 220px; }
+
+        @media (max-width: 600px) {
+            .grocery-edit-row { flex-direction: column; }
+            .grocery-edit-select { width: 100%; }
+            .grocery-edit-drag { width: 100%; justify-content: flex-start; padding-top: 0; }
+        }
+
+.inventory-add-row { display: flex; gap: 0.5rem; align-items: center; }
         button { cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
         .inventory-add-row button { background: var(--primary); color: white; border: none; padding: 0 1.2rem; border-radius: 8px; height: 42px; }
         .inventory-add-row button:hover { background: var(--primary-dark); }
@@ -474,6 +566,20 @@
         .week-day-filter { margin: -0.5rem 0 0.75rem; }
         .week-slot-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         .week-slot-badge { background: var(--slot-bg); border: 1px solid var(--border); color: var(--text-main); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+/* Meal-type sections inside View Week modal (mirrors calendar meal categories) */
+.week-type-section { margin-top: 1.25rem; }
+.week-type-section:first-child { margin-top: 0.25rem; }
+.week-type-title {
+    display:flex; align-items:center; justify-content: space-between;
+    gap: 12px; margin: 1.25rem 0 0.75rem; padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+.week-type-section:first-child .week-type-title { border-top: none; padding-top: 0; margin-top: 0; }
+.week-type-title h3 { margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-main); }
+.week-type-count {
+    background: var(--slot-bg); border: 1px solid var(--border); color: var(--text-main);
+    padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 800;
+}
         .recipe-picker-list { list-style: none; margin-top: 1rem; }
         .picker-item { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-radius: 8px; color: var(--text-main); }
         .picker-item:hover { background: var(--slot-bg); color: var(--primary); padding-left: 1.5rem; }
@@ -838,7 +944,10 @@
                 <div class="tool-card">
                     <div class="header-row">
                         <h3><i class="fas fa-shopping-basket"></i> Grocery List</h3>
-                        <button class="btn-sm" id="btn-copy-list" onclick="copyGroceryList()"><i class="far fa-copy"></i> Copy</button>
+	                        <div class="header-actions">
+	                            <button class="btn-sm" id="btn-copy-list" onclick="copyGroceryList()"><i class="far fa-copy"></i> Copy</button>
+	                            <button class="btn-sm" id="btn-edit-grocery-cats" onclick="openGroceryEditModal()"><i class="fas fa-pen"></i> Edit</button>
+	                        </div>
                     </div>
                     <div id="grocery-list-output" class="grocery-container"></div>
                     <div class="inventory-add-row" style="border-top: 1px dashed var(--border); padding-top: 1.5rem;">
@@ -1101,6 +1210,51 @@
         </div>
     </div>
 
+    
+    <!-- Add to Planner (modal) -->
+    <div id="add-to-plan-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <h2>Add to Planner</h2>
+                <button class="modal-close-btn" onclick="closeAddToPlanModal()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="addplan-section-title">Choose day</div>
+            <div class="week-day-filter">
+                <div class="filter-scroll" id="addplan-day-filters"></div>
+            </div>
+
+            <div class="addplan-section-title">Choose meal</div>
+            <div class="addplan-type-grid" id="addplan-type-filters"></div>
+
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeAddToPlanModal()">Cancel</button>
+                <button id="addplan-confirm-btn" class="primary" onclick="confirmAddToPlan()" disabled>Add to Planner</button>
+            </div>
+        </div>
+    </div>
+
+
+<!-- Grocery Category Editor (modal) -->
+    <div id="grocery-edit-modal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header-row">
+                <div style="flex-grow:1;">
+                    <h2>Edit Grocery Categories</h2>
+                    <div class="grocery-edit-hint">Drag items into the correct shopping section (or use the dropdown). Changes apply to this week's list and will be remembered.</div>
+                </div>
+                <button class="modal-close-btn" onclick="closeGroceryEditModal()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="grocery-edit-list" class="grocery-edit-list"></div>
+
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeGroceryEditModal()">Cancel</button>
+                <button class="primary" onclick="saveGroceryCategoryEdits()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <div id="cook-mode-overlay">
         <div class="cook-header">
             <h2 id="cook-title" class="cook-title">Recipe Title</h2>
@@ -1175,6 +1329,11 @@
         let mealPlan = {};
         let inventory = [];
         let manualGrocery = [];
+        // Grocery list helpers
+        let groceryEditMode = false; // toggled by the Edit button
+        let groceryCategoryOverrides = {}; // auto-item category overrides by normalized ingredient key
+        let groceryEventsBound = false; // prevents double-binding DOM events
+
         let friends = []; 
         
                 let friendCategories = []; 
@@ -1860,7 +2019,7 @@ const PRESET_COLORS = [
             const defaultInv = [{ name: "Salt", category: "Spices & Seasonings", checked: true }, { name: "Garlic", category: "Produce", checked: true }];
             await setDoc(doc(db, "users", currentUser.uid, "data", "inventory"), { items: defaultInv });
             await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: {} });
-            await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: [] });
+            await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: [], overrides: {} });
             await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
             await saveProfile(); 
 
@@ -1890,7 +2049,9 @@ const PRESET_COLORS = [
             mealPlan = mpSnap.exists() ? mpSnap.data().plan : {};
 
             const grocSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "grocery"));
-            manualGrocery = grocSnap.exists() ? grocSnap.data().items : [];
+            const grocData = grocSnap.exists() ? (grocSnap.data() || {}) : {};
+            manualGrocery = Array.isArray(grocData.items) ? grocData.items : [];
+            groceryCategoryOverrides = (grocData.overrides && typeof grocData.overrides === 'object') ? grocData.overrides : {};
 
             const friendsSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "friends"));
             friends = friendsSnap.exists() ? friendsSnap.data().list : [];
@@ -1937,6 +2098,7 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
             renderInventory();
             renderFriendsList();
             generateGroceryList();
+            bindGroceryCategoryEditEvents();
             document.getElementById('loader').style.display = 'none';
         }
 
@@ -1945,7 +2107,7 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
         }
         async function saveInventoryToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "inventory"), { items: inventory }); }
         async function saveMealPlanToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: mealPlan }); }
-        async function saveGroceryToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: manualGrocery }); }
+        async function saveGroceryToCloud() { await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: manualGrocery, overrides: groceryCategoryOverrides }); }
 
         window.saveAllData = async () => {
             const btn = document.getElementById('btn-global-save');
@@ -2515,6 +2677,7 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
 
                     <div class="card-actions">
                          <div style="display:flex; align-items:center; gap:10px;">
+                             <button class="btn-plan" onclick="event.stopPropagation(); openAddToPlanModal('${r.id}')"><i class="fas fa-calendar-plus"></i> Plan</button>
                              <button class="btn-cook" onclick="openCookMode('${r.id}')"><i class="fas fa-fire"></i> Cook</button>
                          </div>
                          <div class="action-buttons">
@@ -2646,127 +2809,276 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
             WEEK_DAY_LABELS.forEach((d, idx) => container.appendChild(makeBtn(d, idx)));
         }
 
-        function buildWeekPlannedRecipesDetailed() {
-            const map = new Map();
+        const WEEK_TYPE_ORDER = ['break','lunch','dinner-main','dinner-side'];
 
-            Object.keys(mealPlan || {}).forEach(key => {
-                const plan = mealPlan[key];
-                if (!plan) return;
+function prettyMealTypeLabel(typeKey) {
+    return String(typeKey || 'Other')
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+}
 
-                const recipe = recipes.find(r => r.id === plan.recipeId);
-                if (!recipe) return;
+// Builds a structure like:
+// { "break": [ { recipe, slots:[{day,type,label}] }, ... ], "lunch": [...], ... }
+// - Dedupes recipe cards *within* each meal-type section.
+// - If dayFilter >= 0, includes only that day.
+function buildWeekPlannedRecipesByTypeDetailed(dayFilter = -1) {
+    const byType = {}; // typeKey -> Map(recipeId -> { recipe, slots:[] })
 
-                const dayIdx = Number(plan.day);
-                const dayShort = WEEK_DAY_LABELS[dayIdx] || `Day ${plan.day}`;
-                const mealLabel = WEEK_TYPE_LABELS[plan.type] || plan.type;
+    Object.keys(mealPlan || {}).forEach(key => {
+        const plan = mealPlan[key];
+        if (!plan) return;
 
-                if (!map.has(recipe.id)) map.set(recipe.id, { recipe, slots: [] });
-                map.get(recipe.id).slots.push({
-                    day: dayIdx,
-                    type: plan.type,
-                    label: `${dayShort} ${mealLabel}`
-                });
+        const dayIdx = Number(plan.day);
+        if (dayFilter >= 0 && dayIdx !== dayFilter) return;
+
+        const recipe = recipes.find(r => r.id === plan.recipeId);
+        if (!recipe) return;
+
+        const typeKey = plan.type || 'other';
+        const dayShort = WEEK_DAY_LABELS[dayIdx] || `Day ${plan.day}`;
+        const mealLabel = WEEK_TYPE_LABELS[typeKey] || prettyMealTypeLabel(typeKey);
+
+        // For full-week view, we show day + meal in the slot badge.
+        // For a single-day filter, the section already communicates the meal, so badges can be omitted later.
+        const slotLabel = (dayFilter >= 0) ? mealLabel : `${dayShort} ${mealLabel}`;
+
+        if (!byType[typeKey]) byType[typeKey] = new Map();
+        const typeMap = byType[typeKey];
+
+        if (!typeMap.has(recipe.id)) typeMap.set(recipe.id, { recipe, slots: [] });
+        typeMap.get(recipe.id).slots.push({
+            day: dayIdx,
+            type: typeKey,
+            label: slotLabel
+        });
+    });
+
+    const result = {};
+    Object.keys(byType).forEach(typeKey => {
+        const arr = Array.from(byType[typeKey].values()).sort((a, b) =>
+            (a.recipe.title || '').toLowerCase().localeCompare((b.recipe.title || '').toLowerCase())
+        );
+        result[typeKey] = arr;
+    });
+
+    return result;
+}
+
+function getWeekTypeRenderOrder(typeKeys) {
+    const keys = Array.isArray(typeKeys) ? typeKeys.slice() : [];
+    const known = WEEK_TYPE_ORDER.filter(t => keys.includes(t));
+    const unknown = keys.filter(t => !WEEK_TYPE_ORDER.includes(t)).sort((a, b) => prettyMealTypeLabel(a).localeCompare(prettyMealTypeLabel(b)));
+    return [...known, ...unknown];
+}
+
+function renderWeekRecipesList() {
+    const container = document.getElementById('week-recipes-grid');
+    const summary = document.getElementById('week-recipes-summary');
+    if (!container || !summary) return;
+
+    container.innerHTML = '';
+
+    const byType = buildWeekPlannedRecipesByTypeDetailed(currentWeekDayFilter);
+    const typeKeys = Object.keys(byType).filter(k => Array.isArray(byType[k]) && byType[k].length > 0);
+    const order = getWeekTypeRenderOrder(typeKeys);
+
+    const totalCards = order.reduce((sum, k) => sum + (byType[k]?.length || 0), 0);
+    const dayName = currentWeekDayFilter >= 0
+        ? (WEEK_DAY_FULL[currentWeekDayFilter] || WEEK_DAY_LABELS[currentWeekDayFilter])
+        : 'this week';
+
+    if (!totalCards) {
+        summary.innerText = (currentWeekDayFilter >= 0)
+            ? `No recipes planned for ${dayName} yet.`
+            : 'No recipes planned yet. Add meals to your week to see them here.';
+        container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--text-light); padding: 2rem 0;">No planned recipes yet.</div>`;
+        return;
+    }
+
+    // Summary line under the day filter (keep it simple—no meal breakdown)
+    summary.innerText = (currentWeekDayFilter >= 0)
+        ? `Planned recipes for ${dayName}.`
+        : 'Planned recipes for this week.';
+
+    const fragment = document.createDocumentFragment();
+
+    order.forEach(typeKey => {
+        const items = byType[typeKey];
+        if (!items || !items.length) return;
+
+        const section = document.createElement('div');
+        section.className = 'week-type-section';
+        const typeTitle = WEEK_TYPE_LABELS[typeKey] || prettyMealTypeLabel(typeKey);
+
+        section.innerHTML = `
+            <div class="week-type-title">
+                <h3>${typeTitle}</h3>
+                
+            </div>
+            <div class="recipe-grid week-type-grid" data-week-type="${typeKey}"></div>
+        `;
+
+        const grid = section.querySelector('.week-type-grid');
+
+        const cardsFrag = document.createDocumentFragment();
+        items.forEach(({ recipe, slots }) => {
+            const cats = Array.isArray(recipe.category) ? recipe.category : [recipe.category || 'Other'];
+            const card = document.createElement('div');
+            card.className = 'recipe-card';
+
+            let badgesHtml = '<div class="cat-badges">';
+            cats.forEach(c => {
+                const badgeColor = getColorForCategory(c);
+                badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
             });
+            badgesHtml += '</div>';
 
-            return Array.from(map.values()).sort((a, b) =>
-                (a.recipe.title || '').toLowerCase().localeCompare((b.recipe.title || '').toLowerCase())
-            );
-        }
-
-        function renderWeekRecipesList() {
-            const grid = document.getElementById('week-recipes-grid');
-            const summary = document.getElementById('week-recipes-summary');
-            if (!grid || !summary) return;
-
-            grid.innerHTML = '';
-            const allItems = buildWeekPlannedRecipesDetailed();
-
-            const filteredItems = currentWeekDayFilter >= 0
-                ? allItems.filter(({ slots }) => (slots || []).some(s => s.day === currentWeekDayFilter))
-                : allItems;
-
-            const dayName = currentWeekDayFilter >= 0 ? (WEEK_DAY_FULL[currentWeekDayFilter] || WEEK_DAY_LABELS[currentWeekDayFilter]) : 'this week';
-
-            if (!filteredItems.length) {
-                if (currentWeekDayFilter >= 0) {
-                    summary.innerText = `No recipes planned for ${dayName} yet.`;
-                } else {
-                    summary.innerText = 'No recipes planned yet. Add meals to your week to see them here.';
-                }
-                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--text-light); padding: 2rem 0;">No planned recipes yet.</div>`;
-                return;
-            }
-
-            if (currentWeekDayFilter >= 0) {
-                summary.innerText = `${filteredItems.length} recipe${filteredItems.length === 1 ? '' : 's'} planned for ${dayName}.`;
-            } else {
-                summary.innerText = `${filteredItems.length} recipe${filteredItems.length === 1 ? '' : 's'} planned this week.`;
-            }
-
-            const fragment = document.createDocumentFragment();
-            filteredItems.forEach(({ recipe, slots }) => {
-                const cats = Array.isArray(recipe.category) ? recipe.category : [recipe.category || 'Other'];
-                const card = document.createElement('div');
-                card.className = 'recipe-card';
-
-                let badgesHtml = '<div class="cat-badges">';
-                cats.forEach(c => {
-                    const badgeColor = getColorForCategory(c);
-                    badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
-                });
-                badgesHtml += '</div>';
-
-                const slotsToShow = (currentWeekDayFilter >= 0)
-                    ? (slots || []).filter(s => s.day === currentWeekDayFilter)
-                    : (slots || []);
-
-                const slotBadges = slotsToShow
+            // Slot badges (only for full-week view; day-filter view is already grouped by meal)
+            let slotBadges = '';
+            if (currentWeekDayFilter < 0) {
+                slotBadges = (slots || [])
                     .slice()
                     .sort((a, b) => (a.label || '').localeCompare(b.label || ''))
                     .map(s => `<span class="week-slot-badge">${s.label}</span>`)
                     .join('');
+            }
 
-                const multiplier = recipe.currentMultiplier || 1.0;
-                const scaledIngredients = formatScaledIngredients(recipe.ingredients, multiplier);
-                const formattedInst = formatInstructionsHTML(recipe.instructions);
+            const multiplier = recipe.currentMultiplier || 1.0;
+            const scaledIngredients = formatScaledIngredients(recipe.ingredients, multiplier);
+            const formattedInst = formatInstructionsHTML(recipe.instructions);
 
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div style="flex-grow:1;">
-                            ${badgesHtml}
-                            <div class="recipe-title">${recipe.title}</div>
-                            <div class="week-slot-badges">${slotBadges}</div>
-                        </div>
+            card.innerHTML = `
+                <div class="card-header">
+                    <div style="flex-grow:1;">
+                        ${badgesHtml}
+                        <div class="recipe-title">${recipe.title}</div>
+                        ${slotBadges ? `<div class="week-slot-badges">${slotBadges}</div>` : ''}
                     </div>
+                </div>
 
-                    <div class="clickable-area" onclick="openViewModal('${recipe.id}')">
-                        <div class="recipe-details">
-                            <h4>Ingredients</h4>
-                            <ul>${scaledIngredients}</ul>
-                        </div>
-                        <div class="recipe-details"><h4>Instructions</h4><div class="instruction-preview">${formattedInst}</div></div>
+                <div class="clickable-area" onclick="openViewModal('${recipe.id}')">
+                    <div class="recipe-details">
+                        <h4>Ingredients</h4>
+                        <ul>${scaledIngredients}</ul>
                     </div>
+                    <div class="recipe-details"><h4>Instructions</h4><div class="instruction-preview">${formattedInst}</div></div>
+                </div>
 
-                    <div class="card-actions">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <button class="btn-cook" onclick="event.stopPropagation(); openCookMode('${recipe.id}')"><i class="fas fa-fire"></i> Cook</button>
-                        </div>
-                        <div class="action-buttons"></div>
+                <div class="card-actions">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <button class="btn-cook" onclick="event.stopPropagation(); openCookMode('${recipe.id}')"><i class="fas fa-fire"></i> Cook</button>
                     </div>
-                `;
+                    <div class="action-buttons"></div>
+                </div>
+            `;
 
-                fragment.appendChild(card);
-            });
-            grid.appendChild(fragment);
-        }
+            cardsFrag.appendChild(card);
+        });
 
-        window.openWeekRecipesModal = () => {
+        grid.appendChild(cardsFrag);
+        fragment.appendChild(section);
+    });
+
+    container.appendChild(fragment);
+}
+
+window.openWeekRecipesModal = () => {
             currentWeekDayFilter = -1;
             renderWeekDayFilters();
             renderWeekRecipesList();
             document.getElementById('week-recipes-modal').classList.add('open');
         };
         window.closeWeekRecipesModal = () => document.getElementById('week-recipes-modal').classList.remove('open');
+
+        // =====================================================================
+        // ADD TO PLANNER (from Dashboard recipe cards)
+        // Opens a small modal where the user picks Day + Meal type, then the
+        // recipe is assigned into that slot (same as drag/drop onto calendar).
+        // =====================================================================
+        let addPlanRecipeId = null;
+        let addPlanDayIdx = null;       // 0..6 (Mon..Sun)
+        let addPlanMealType = null;     // 'break' | 'lunch' | 'dinner-main' | 'dinner-side'
+
+        function getTodayPlannerIndex() {
+            const dow = new Date().getDay(); // 0=Sun..6=Sat
+            return dow === 0 ? 6 : (dow - 1); // map to Mon=0..Sun=6
+        }
+
+        window.openAddToPlanModal = (recipeId) => {
+            addPlanRecipeId = recipeId;
+            addPlanDayIdx = getTodayPlannerIndex();
+            addPlanMealType = null;
+
+            renderAddPlanDayFilters();
+            renderAddPlanTypeFilters();
+            syncAddPlanConfirmButton();
+
+            document.getElementById('add-to-plan-modal').classList.add('open');
+        };
+
+        window.closeAddToPlanModal = () => {
+            document.getElementById('add-to-plan-modal').classList.remove('open');
+            addPlanRecipeId = null;
+            addPlanDayIdx = null;
+            addPlanMealType = null;
+        };
+
+        function renderAddPlanDayFilters() {
+            const container = document.getElementById('addplan-day-filters');
+            if (!container) return;
+            container.innerHTML = '';
+            WEEK_DAY_LABELS.forEach((label, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `filter-pill ${addPlanDayIdx === idx ? 'active' : ''}`;
+                btn.type = 'button';
+                btn.innerText = label;
+                btn.onclick = () => {
+                    addPlanDayIdx = idx;
+                    renderAddPlanDayFilters();
+                    syncAddPlanConfirmButton();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderAddPlanTypeFilters() {
+            const container = document.getElementById('addplan-type-filters');
+            if (!container) return;
+            container.innerHTML = '';
+            const types = ['break','lunch','dinner-main','dinner-side'];
+            types.forEach(typeKey => {
+                const btn = document.createElement('button');
+                btn.className = `filter-pill ${addPlanMealType === typeKey ? 'active' : ''}`;
+                btn.type = 'button';
+                btn.innerText = WEEK_TYPE_LABELS[typeKey] || typeKey;
+                btn.onclick = () => {
+                    addPlanMealType = typeKey;
+                    renderAddPlanTypeFilters();
+                    syncAddPlanConfirmButton();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function syncAddPlanConfirmButton() {
+            const btn = document.getElementById('addplan-confirm-btn');
+            if (!btn) return;
+            btn.disabled = !(addPlanRecipeId && addPlanDayIdx !== null && addPlanMealType);
+        }
+
+        window.confirmAddToPlan = async () => {
+            if (!addPlanRecipeId || addPlanDayIdx === null || !addPlanMealType) {
+                showToast("Select a day and meal.");
+                return;
+            }
+            const r = recipes.find(x => x.id === addPlanRecipeId);
+            await updateMealSlot(addPlanDayIdx, addPlanMealType, addPlanRecipeId);
+            closeAddToPlanModal();
+
+            showToast(`${r ? r.title : 'Recipe'} added to planner`);
+            // Helpful UX: jump to Planner so they can see it immediately
+            try { switchTab('planning'); } catch (e) {}
+        };
 
 
         function renderMealPlan() {
@@ -3104,76 +3416,122 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
                     return obj ? obj.key : '';
                 }
 
-                function generateGroceryList() {
+                // Compute auto grocery items from the current plan (deduped + inventory-matched)
+                function computeAutoGroceryItems() {
+                    // 1) Collect all ingredients needed from the current meal plan
                     let needed = [];
                     Object.values(mealPlan).forEach(p => {
                         const r = recipes.find(x => x.id === p.recipeId);
-                        if(r) {
-                            (r.ingredients || '').split('\n').forEach(line => {
-                                const parsed = parseIngredientLine(line);
-                                if(parsed && parsed.key) needed.push(parsed);
-                            });
-                        }
+                        if (!r) return;
+                        (r.ingredients || '').split('\n').forEach(line => {
+                            const parsed = parseIngredientLine(line);
+                            if (parsed && parsed.key) needed.push(parsed);
+                        });
                     });
 
-                    // Compare against on-hand inventory using normalized matching keys (not exact strings).
-                    // Compare against on-hand inventory using fuzzy token matching (not exact strings).
+                    // 2) Compare against on-hand inventory (checked items) using fuzzy token matching
                     const onHandItems = inventory
                         .filter(i => i.checked)
                         .map(i => {
                             const p = parseIngredientLine(i.name);
-                            if(!p || !p.key) return null;
+                            if (!p || !p.key) return null;
                             return { key: p.key, tokens: tokenizeForMatch(p.item || p.display || p.key) };
                         })
                         .filter(Boolean);
 
                     const finalNeeded = needed.filter(n => !onHandItems.some(h => isOnHandMatch(n, h)));
 
-                    // De-duplicate by normalized key while preserving a clean display string.
+                    // 3) De-duplicate by normalized key while preserving a clean display string
                     const uniqueMap = new Map();
                     finalNeeded.forEach(n => {
-                        if(!uniqueMap.has(n.key)) uniqueMap.set(n.key, n);
+                        if (!uniqueMap.has(n.key)) uniqueMap.set(n.key, n);
                     });
 
-                    const uniqueNeeded = Array.from(uniqueMap.values()).map(n => {
+                    // 4) Build the auto items list (with category detection + user overrides)
+                    return Array.from(uniqueMap.values()).map(n => {
                         const display = n.display || n.item || n.raw || '';
-                        const name = (/^\d/.test(display) || !display) ? display : (display.charAt(0).toUpperCase() + display.slice(1));
+                        const name = (/^\d/.test(display) || !display)
+                            ? display
+                            : (display.charAt(0).toUpperCase() + display.slice(1));
+
+                        const detected = detectCategory(n.item || display);
+                        const override = (groceryCategoryOverrides && groceryCategoryOverrides[n.key]) || '';
+                        const category = (override && INVENTORY_CATEGORIES.includes(override)) ? override : detected;
+
                         return {
                             name,
-                            category: detectCategory(n.item || display),
+                            category: category || 'Other',
+                            detectedCategory: detected || 'Other',
                             isManual: false,
                             _key: n.key
                         };
                     });
+                }
 
+                function generateGroceryList() {
+                    const uniqueNeeded = computeAutoGroceryItems();
+
+                    // 5) Merge auto + manual items, then render grouped by category
                     const all = [...uniqueNeeded, ...manualGrocery];
                     const listEl = document.getElementById('grocery-list-output');
                     listEl.innerHTML = '';
 
-                    if(all.length === 0) {
+                    if (all.length === 0) {
                         listEl.innerHTML = '<div style="padding:1rem; color:var(--text-light)">All stocked up!</div>';
                         return;
                     }
 
+                    // Helper: category dropdown used in "Edit" mode
+                    const buildCategorySelect = (currentCategory, attrs) => {
+                        const opts = INVENTORY_CATEGORIES.map(cat => {
+                            const sel = (cat === currentCategory) ? ' selected' : '';
+                            return `<option value="${escapeHtml(cat)}"${sel}>${escapeHtml(cat)}</option>`;
+                        }).join('');
+                        return `<select class="groc-cat-edit" ${attrs}>${opts}</select>`;
+                    };
+
                     INVENTORY_CATEGORIES.forEach(cat => {
-                        const items = all.filter(i => i.category === cat).sort((a,b)=>a.name.localeCompare(b.name));
-                        if(items.length > 0) {
-                            listEl.innerHTML += `<div class="inv-category-header">${cat}</div>`;
-                            items.forEach(item => {
-                                let del = '';
-                                if(item.isManual) {
-                                    const idx = manualGrocery.indexOf(item);
-                                    del = `<i class="fas fa-times delete-manual" onclick="removeManualItem(${idx})"></i>`;
+                        const items = all
+                            .filter(i => (i.category || 'Other') === cat)
+                            .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+                        if (items.length === 0) return;
+
+                        listEl.innerHTML += `<div class="inv-category-header">${cat}</div>`;
+
+                        items.forEach(item => {
+                            const isManualItem = !!item.isManual;
+
+                            // Delete icon (manual-only)
+                            let del = '';
+                            let idx = -1;
+                            if (isManualItem) {
+                                idx = manualGrocery.indexOf(item);
+                                del = `<i class="fas fa-times delete-manual" onclick="removeManualItem(${idx})"></i>`;
+                            }
+
+                            // Category selector (edit mode)
+                            let editSel = '';
+                            if (groceryEditMode) {
+                                if (isManualItem && idx > -1) {
+                                    editSel = buildCategorySelect(item.category || cat, `data-manual-index="${idx}"`);
+                                } else {
+                                    editSel = buildCategorySelect(item.category || cat, `data-auto-key="${escapeHtml(item._key || '')}"`);
                                 }
-                                listEl.innerHTML += `
-                                    <div class="grocery-item ${item.isManual?'manual-item':''}">
-                                        <input type="checkbox"> <label>${item.name}</label> ${del}
+                            }
+
+                            listEl.innerHTML += `
+                                    <div class="grocery-item ${isManualItem ? 'manual-item' : ''}">
+                                        <input type="checkbox">
+                                        <label>${escapeHtml(item.name || '')}</label>
+                                        ${editSel}
+                                        ${del}
                                     </div>
                                 `;
-                            });
-                        }
+                        });
                     });
                 }
+
 
 
         window.copyGroceryList = () => {
@@ -3195,7 +3553,272 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
             });
         };
 
-        
+        // --- Grocery category editor (modal) ---
+        // Keeps the main grocery list clean, and provides a focused place to re-categorize items.
+        let groceryEditDraft = { manual: {}, auto: {} };
+        let groceryEditBound = false;
+
+        function buildCategorySelectOptions(currentCategory) {
+            return INVENTORY_CATEGORIES.map(cat => {
+                const sel = (cat === currentCategory) ? ' selected' : '';
+                return `<option value="${escapeHtml(cat)}"${sel}>${escapeHtml(cat)}</option>`;
+            }).join('');
+        }
+
+        function renderGroceryEditModal() {
+            const overlay = document.getElementById('grocery-edit-modal');
+            const listEl = document.getElementById('grocery-edit-list');
+            if (!overlay || !listEl) return;
+
+            // Build a snapshot of the current list (auto + manual)
+            const autoItems = computeAutoGroceryItems();
+            const manualItems = (manualGrocery || []).map((m, idx) => ({
+                ...m,
+                isManual: true,
+                __manualIndex: idx
+            }));
+
+            const all = [...autoItems, ...manualItems]
+                .map(i => ({
+                    ...i,
+                    category: (groceryEditDraft.manual[i.__manualIndex] ?? groceryEditDraft.auto[i._key] ?? i.category ?? 'Other')
+                }));
+
+            if (all.length === 0) {
+                listEl.innerHTML = '<div style="padding:1rem; color:var(--text-light)">No items in your grocery list yet.</div>';
+                return;
+            }
+
+            // Render grouped by category (current selection)
+            listEl.innerHTML = '';
+            INVENTORY_CATEGORIES.forEach(cat => {
+                const items = all
+                    .filter(i => (i.category || 'Other') === cat)
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+                if (items.length === 0) return;
+
+                const safeCat = escapeHtml(cat);
+                listEl.innerHTML += `
+                    <div class="grocery-edit-category" data-category="${safeCat}">
+                        <div class="inv-category-header" style="margin-top:0; cursor: default;">${safeCat}</div>
+                        <div class="grocery-edit-dropzone" data-category="${safeCat}">
+                            ${items.map(item => {
+                                const isManualItem = !!item.isManual;
+                                const detected = item.detectedCategory || item.category || 'Other';
+                                const rowAttrs = isManualItem
+                                    ? `data-manual-index="${item.__manualIndex}"`
+                                    : `data-auto-key="${escapeHtml(item._key || '')}" data-detected="${escapeHtml(detected)}"`;
+                                const selectAttrs = isManualItem
+                                    ? `data-manual-index="${item.__manualIndex}"`
+                                    : `data-auto-key="${escapeHtml(item._key || '')}" data-detected="${escapeHtml(detected)}"`;
+
+                                return `
+                                    <div class="grocery-edit-row" ${rowAttrs} draggable="true">
+                                        <div class="grocery-edit-drag" title="Drag to move"><i class="fas fa-grip-vertical"></i></div>
+                                        <div style="flex:1;">
+                                            <div class="grocery-edit-name">${escapeHtml(item.name || '')}</div>
+                                            <div class="grocery-edit-meta">${isManualItem ? 'Manual item' : 'From recipes'}</div>
+                                        </div>
+                                        <select class="groc-cat-edit grocery-edit-select" ${selectAttrs}>
+                                            ${buildCategorySelectOptions(item.category || 'Other')}
+                                        </select>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function bindGroceryEditModalEvents() {
+            if (groceryEditBound) return;
+            const listEl = document.getElementById('grocery-edit-list');
+            if (!listEl) return;
+            groceryEditBound = true;
+
+            // --- Dropdown recategorization (still supported) ---
+            listEl.addEventListener('change', (e) => {
+                const sel = e.target;
+                if (!sel || !sel.classList.contains('grocery-edit-select')) return;
+                const prevScroll = listEl.scrollTop;
+                const newCategory = sel.value;
+                const manualIdxAttr = sel.getAttribute('data-manual-index');
+                const autoKey = sel.getAttribute('data-auto-key');
+
+                if (manualIdxAttr !== null) {
+                    const idx = parseInt(manualIdxAttr, 10);
+                    if (!Number.isNaN(idx)) groceryEditDraft.manual[idx] = newCategory;
+                } else if (autoKey) {
+                    groceryEditDraft.auto[autoKey] = newCategory;
+                }
+
+                // Re-render so items "move" into their new category group immediately.
+                renderGroceryEditModal();
+                listEl.scrollTop = prevScroll;
+            });
+
+            // --- Drag & drop recategorization ---
+            // Drag the handle, then drop anywhere in another category section.
+            let draggingRow = null;
+            let activeTarget = null;
+
+            listEl.addEventListener('dragstart', (e) => {
+                // Allow dragging from anywhere on the row *except* the dropdown
+                if (e.target?.closest?.('select')) return;
+
+                const row = e.target?.closest?.('.grocery-edit-row');
+                if (!row) return;
+
+                draggingRow = row;
+                row.classList.add('dragging');
+
+                const payload = {
+                    manualIndex: row.getAttribute('data-manual-index'),
+                    autoKey: row.getAttribute('data-auto-key')
+                };
+
+                try {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', JSON.stringify(payload));
+                } catch (_) { /* no-op */ }
+            });
+
+            listEl.addEventListener('dragend', () => {
+                if (draggingRow) draggingRow.classList.remove('dragging');
+                draggingRow = null;
+                if (activeTarget) activeTarget.classList.remove('drag-over');
+                activeTarget = null;
+            });
+
+            listEl.addEventListener('dragover', (e) => {
+                const target = e.target?.closest?.('.grocery-edit-category');
+                if (!target) return;
+
+                // Allow drop
+                e.preventDefault();
+
+                if (activeTarget && activeTarget !== target) activeTarget.classList.remove('drag-over');
+                activeTarget = target;
+                activeTarget.classList.add('drag-over');
+            });
+
+            listEl.addEventListener('drop', (e) => {
+                const target = e.target?.closest?.('.grocery-edit-category');
+                if (!target) return;
+
+                e.preventDefault();
+
+                const prevScroll = listEl.scrollTop;
+                const newCategory = target.getAttribute('data-category') || 'Other';
+
+                // Determine what was dragged (prefer live DOM reference; fall back to dataTransfer)
+                let manualIndex = draggingRow?.getAttribute('data-manual-index');
+                let autoKey = draggingRow?.getAttribute('data-auto-key');
+
+                if (!manualIndex && !autoKey) {
+                    try {
+                        const data = JSON.parse(e.dataTransfer.getData('text/plain') || '{}');
+                        manualIndex = data.manualIndex ?? null;
+                        autoKey = data.autoKey ?? null;
+                    } catch (_) { /* no-op */ }
+                }
+
+                if (manualIndex !== null && manualIndex !== undefined) {
+                    const idx = parseInt(manualIndex, 10);
+                    if (!Number.isNaN(idx)) groceryEditDraft.manual[idx] = newCategory;
+                } else if (autoKey) {
+                    groceryEditDraft.auto[autoKey] = newCategory;
+                }
+
+                // Re-render and keep scroll position stable.
+                renderGroceryEditModal();
+                listEl.scrollTop = prevScroll;
+
+                // Cleanup highlight
+                if (activeTarget) activeTarget.classList.remove('drag-over');
+                activeTarget = null;
+            });
+        }
+
+
+
+        window.openGroceryEditModal = () => {
+            groceryEditDraft = { manual: {}, auto: {} };
+            bindGroceryEditModalEvents();
+            renderGroceryEditModal();
+            document.getElementById('grocery-edit-modal')?.classList.add('open');
+        };
+
+        window.closeGroceryEditModal = () => {
+            document.getElementById('grocery-edit-modal')?.classList.remove('open');
+            groceryEditDraft = { manual: {}, auto: {} };
+        };
+
+        window.saveGroceryCategoryEdits = async () => {
+            // Apply manual changes
+            Object.entries(groceryEditDraft.manual || {}).forEach(([k, v]) => {
+                const idx = parseInt(k, 10);
+                if (!Number.isNaN(idx) && manualGrocery[idx]) manualGrocery[idx].category = v;
+            });
+
+            // Apply auto overrides (delete override if user picks detected category)
+            Object.entries(groceryEditDraft.auto || {}).forEach(([key, cat]) => {
+                // Compute detected category for this key from the current auto list snapshot
+                const autoNow = computeAutoGroceryItems().find(i => i._key === key);
+                const detected = autoNow?.detectedCategory || autoNow?.category || 'Other';
+                if (cat === detected) {
+                    delete groceryCategoryOverrides[key];
+                } else {
+                    groceryCategoryOverrides[key] = cat;
+                }
+            });
+
+            await saveGroceryToCloud();
+            generateGroceryList();
+            closeGroceryEditModal();
+        };
+
+        // Backward compatibility: if anything still calls the old function name, open the modal.
+        window.toggleGroceryEditMode = () => window.openGroceryEditModal();
+
+        // One-time event binding for the grocery category dropdowns (event delegation)
+        function bindGroceryCategoryEditEvents() {
+            if (groceryEventsBound) return;
+            const container = document.getElementById('grocery-list-output');
+            if (!container) return;
+
+            groceryEventsBound = true;
+            container.addEventListener('change', (e) => {
+                const select = e.target;
+                if (!select || !select.classList.contains('groc-cat-edit')) return;
+
+                const newCategory = select.value;
+                const manualIdxAttr = select.getAttribute('data-manual-index');
+                const autoKey = select.getAttribute('data-auto-key');
+
+                // Manual items: update the stored manual list
+                if (manualIdxAttr !== null) {
+                    const idx = parseInt(manualIdxAttr, 10);
+                    if (!Number.isNaN(idx) && manualGrocery[idx]) {
+                        manualGrocery[idx].category = newCategory;
+                        saveGroceryToCloud();
+                        generateGroceryList();
+                    }
+                    return;
+                }
+
+                // Auto items: store an override by normalized ingredient key
+                if (autoKey) {
+                    groceryCategoryOverrides[autoKey] = newCategory;
+                    saveGroceryToCloud();
+                    generateGroceryList();
+                }
+            });
+        }
+
+
         // --- COOK MODE (Fullscreen) with BIG CHECKLIST + STEP TIMERS ---
         const cookTimers = new Map();
         let cookModeEventsBound = false;
