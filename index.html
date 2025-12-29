@@ -467,7 +467,7 @@
         .cook-section h3 { font-size: 1.4rem; border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; margin-bottom: 1.5rem; color: var(--primary); }
         .cook-list-item { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 1.2rem; font-size: 1.15rem; line-height: 1.6; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: 0.2s; color: var(--text-main); }
         .cook-list-item:hover { background: var(--slot-bg); }
-        .cook-list-item input { transform: scale(1.5); margin-top: 6px; accent-color: var(--primary); }
+        .cook-list-item input { width: 24px; height: 24px; margin-top: 0.20em; accent-color: var(--primary); }
         .cook-list-item.done { text-decoration: line-through; color: var(--text-light); }
 
 
@@ -478,16 +478,16 @@
             color: var(--text-main);
         }
         .cook-toggle:hover { background: var(--slot-bg); }
-        .cook-toggle input { transform: scale(1.85); margin-top: 6px; accent-color: var(--primary); flex: 0 0 auto; }
+        .cook-toggle input { width: 28px; height: 28px; margin-top: 0.22em; accent-color: var(--primary); flex: 0 0 auto; }
         .cook-item-text { font-size: 1.45rem; line-height: 1.7; }
         .cook-toggle.done { text-decoration: line-through; color: var(--text-light); }
 
         .cook-step-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 1.25rem; }
         .cook-step-main { flex: 1; }
-        .cook-step-num { 
+        .cook-step-num {
             width: 34px; height: 34px; border-radius: 12px; background: var(--hover-bg);
             display: flex; align-items: center; justify-content: center; font-weight: 800;
-            color: var(--primary); margin-top: 2px; flex: 0 0 auto;
+            color: var(--primary); margin-top: 0.22em; flex: 0 0 auto;
         }
 
         .cook-timer { 
@@ -518,6 +518,8 @@
             .cook-item-text { font-size: 1.25rem; }
             .cook-step-row { flex-direction: column; }
             .cook-timer { min-width: 100%; max-width: 100%; }
+            .cook-toggle input { width: 24px; height: 24px; margin-top: 0.20em; }
+            .cook-step-num { width: 30px; height: 30px; margin-top: 0.20em; }
         }
 
 
