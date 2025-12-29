@@ -422,6 +422,13 @@
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); will-change: opacity; }
         .modal-overlay.open { display: flex; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         .modal { background: var(--card-bg); padding: 2.5rem; border-radius: 24px; width: 95%; max-width: 550px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); max-height: 85vh; overflow-y: auto; position: relative; border: var(--border); will-change: transform; }
+
+        /* --- Weekly Planned Recipes Modal --- */
+        .modal.week-recipes { max-width: 1100px; }
+        .week-recipes-summary { color: var(--text-light); font-weight: 600; margin: 0.25rem 0 1.25rem; }
+        .week-day-filter { margin: -0.5rem 0 0.75rem; }
+        .week-slot-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .week-slot-badge { background: var(--slot-bg); border: 1px solid var(--border); color: var(--text-main); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
         .recipe-picker-list { list-style: none; margin-top: 1rem; }
         .picker-item { padding: 1rem 1.2rem; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; border-radius: 8px; color: var(--text-main); }
         .picker-item:hover { background: var(--slot-bg); color: var(--primary); padding-left: 1.5rem; }
@@ -703,7 +710,10 @@
             <br>
             <div class="header-row">
                 <h2>Weekly Plan</h2>
-                <button class="btn-sm" onclick="clearWeeklyPlan()"><i class="fas fa-trash-alt"></i> Clear Week</button>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button class="btn-sm" onclick="openWeekRecipesModal()"><i class="fas fa-layer-group"></i> View Week</button>
+                    <button class="btn-sm" onclick="clearWeeklyPlan()"><i class="fas fa-trash-alt"></i> Clear Week</button>
+                </div>
             </div>
             
             <div class="planner-grid">
@@ -1025,6 +1035,23 @@
             <ul id="picker-list" class="recipe-picker-list"></ul>
             <div class="modal-actions">
                 <button class="secondary" onclick="closeSelectorModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="week-recipes-modal" class="modal-overlay">
+        <div class="modal week-recipes">
+            <div class="modal-header-row">
+                <h2>This Week's Recipes</h2>
+                <button class="modal-close-btn" onclick="closeWeekRecipesModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="week-day-filter">
+                <div class="filter-scroll" id="week-day-filters"></div>
+            </div>
+            <div id="week-recipes-summary" class="week-recipes-summary"></div>
+            <div id="week-recipes-grid" class="recipe-grid"></div>
+            <div class="modal-actions">
+                <button class="secondary" onclick="closeWeekRecipesModal()">Close</button>
             </div>
         </div>
     </div>
@@ -2522,6 +2549,166 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
                 document.getElementById('loader').style.display = 'none';
             });
         };
+        // --- Weekly Planned Recipes (View Week Modal) ---
+        const WEEK_DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        const WEEK_DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+        const WEEK_TYPE_LABELS = {
+            'break': 'Breakfast',
+            'lunch': 'Lunch',
+            'dinner-main': 'Dinner',
+            'dinner-side': 'Side'
+        };
+
+        // -1 = Whole week (no day filter)
+        let currentWeekDayFilter = -1;
+
+        function setWeekDayFilter(dayIdx) {
+            currentWeekDayFilter = Number(dayIdx);
+            renderWeekDayFilters();
+            renderWeekRecipesList();
+        }
+
+        function renderWeekDayFilters() {
+            const container = document.getElementById('week-day-filters');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            const makeBtn = (label, value) => {
+                const btn = document.createElement('button');
+                btn.className = `filter-pill ${currentWeekDayFilter === value ? 'active' : ''}`;
+                btn.type = 'button';
+                btn.innerText = label;
+                btn.onclick = () => setWeekDayFilter(value);
+                return btn;
+            };
+
+            container.appendChild(makeBtn('Week', -1));
+            WEEK_DAY_LABELS.forEach((d, idx) => container.appendChild(makeBtn(d, idx)));
+        }
+
+        function buildWeekPlannedRecipesDetailed() {
+            const map = new Map();
+
+            Object.keys(mealPlan || {}).forEach(key => {
+                const plan = mealPlan[key];
+                if (!plan) return;
+
+                const recipe = recipes.find(r => r.id === plan.recipeId);
+                if (!recipe) return;
+
+                const dayIdx = Number(plan.day);
+                const dayShort = WEEK_DAY_LABELS[dayIdx] || `Day ${plan.day}`;
+                const mealLabel = WEEK_TYPE_LABELS[plan.type] || plan.type;
+
+                if (!map.has(recipe.id)) map.set(recipe.id, { recipe, slots: [] });
+                map.get(recipe.id).slots.push({
+                    day: dayIdx,
+                    type: plan.type,
+                    label: `${dayShort} ${mealLabel}`
+                });
+            });
+
+            return Array.from(map.values()).sort((a, b) =>
+                (a.recipe.title || '').toLowerCase().localeCompare((b.recipe.title || '').toLowerCase())
+            );
+        }
+
+        function renderWeekRecipesList() {
+            const grid = document.getElementById('week-recipes-grid');
+            const summary = document.getElementById('week-recipes-summary');
+            if (!grid || !summary) return;
+
+            grid.innerHTML = '';
+            const allItems = buildWeekPlannedRecipesDetailed();
+
+            const filteredItems = currentWeekDayFilter >= 0
+                ? allItems.filter(({ slots }) => (slots || []).some(s => s.day === currentWeekDayFilter))
+                : allItems;
+
+            const dayName = currentWeekDayFilter >= 0 ? (WEEK_DAY_FULL[currentWeekDayFilter] || WEEK_DAY_LABELS[currentWeekDayFilter]) : 'this week';
+
+            if (!filteredItems.length) {
+                if (currentWeekDayFilter >= 0) {
+                    summary.innerText = `No recipes planned for ${dayName} yet.`;
+                } else {
+                    summary.innerText = 'No recipes planned yet. Add meals to your week to see them here.';
+                }
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--text-light); padding: 2rem 0;">No planned recipes yet.</div>`;
+                return;
+            }
+
+            if (currentWeekDayFilter >= 0) {
+                summary.innerText = `${filteredItems.length} recipe${filteredItems.length === 1 ? '' : 's'} planned for ${dayName}.`;
+            } else {
+                summary.innerText = `${filteredItems.length} recipe${filteredItems.length === 1 ? '' : 's'} planned this week.`;
+            }
+
+            const fragment = document.createDocumentFragment();
+            filteredItems.forEach(({ recipe, slots }) => {
+                const cats = Array.isArray(recipe.category) ? recipe.category : [recipe.category || 'Other'];
+                const card = document.createElement('div');
+                card.className = 'recipe-card';
+
+                let badgesHtml = '<div class="cat-badges">';
+                cats.forEach(c => {
+                    const badgeColor = getColorForCategory(c);
+                    badgesHtml += `<div class="cat-badge" style="background-color: ${badgeColor}; color: white; border:1px solid rgba(0,0,0,0.1); text-shadow:0 1px 2px rgba(0,0,0,0.2);">${c}</div>`;
+                });
+                badgesHtml += '</div>';
+
+                const slotsToShow = (currentWeekDayFilter >= 0)
+                    ? (slots || []).filter(s => s.day === currentWeekDayFilter)
+                    : (slots || []);
+
+                const slotBadges = slotsToShow
+                    .slice()
+                    .sort((a, b) => (a.label || '').localeCompare(b.label || ''))
+                    .map(s => `<span class="week-slot-badge">${s.label}</span>`)
+                    .join('');
+
+                const multiplier = recipe.currentMultiplier || 1.0;
+                const scaledIngredients = formatScaledIngredients(recipe.ingredients, multiplier);
+                const formattedInst = formatInstructionsHTML(recipe.instructions);
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div style="flex-grow:1;">
+                            ${badgesHtml}
+                            <div class="recipe-title">${recipe.title}</div>
+                            <div class="week-slot-badges">${slotBadges}</div>
+                        </div>
+                    </div>
+
+                    <div class="clickable-area" onclick="openViewModal('${recipe.id}')">
+                        <div class="recipe-details">
+                            <h4>Ingredients</h4>
+                            <ul>${scaledIngredients}</ul>
+                        </div>
+                        <div class="recipe-details"><h4>Instructions</h4><div class="instruction-preview">${formattedInst}</div></div>
+                    </div>
+
+                    <div class="card-actions">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <button class="btn-cook" onclick="event.stopPropagation(); openCookMode('${recipe.id}')"><i class="fas fa-fire"></i> Cook</button>
+                        </div>
+                        <div class="action-buttons"></div>
+                    </div>
+                `;
+
+                fragment.appendChild(card);
+            });
+            grid.appendChild(fragment);
+        }
+
+        window.openWeekRecipesModal = () => {
+            currentWeekDayFilter = -1;
+            renderWeekDayFilters();
+            renderWeekRecipesList();
+            document.getElementById('week-recipes-modal').classList.add('open');
+        };
+        window.closeWeekRecipesModal = () => document.getElementById('week-recipes-modal').classList.remove('open');
+
 
         function renderMealPlan() {
             document.querySelectorAll('.meal-slot').forEach(slot => {
@@ -2544,6 +2731,12 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
                     `;
                 }
             });
+
+            // If the week modal is open, keep it live-updated.
+            const weekOverlay = document.getElementById('week-recipes-modal');
+            if (weekOverlay && weekOverlay.classList.contains('open')) {
+                renderWeekRecipesList();
+            }
         }
 
         function renderInventory() {
