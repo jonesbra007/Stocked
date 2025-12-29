@@ -1,4 +1,41 @@
 <!DOCTYPE html>
+<!--
+  STOCKED | Meal Planner (Single-File App)
+
+  File organization (high level):
+  1) <head>
+     - Meta + favicon
+     - Global CSS (base + components + modals)
+  2) <body>
+     - App shell (nav, tabs, panels)
+     - Reusable modals (confirm, alerts, cook mode, week view, etc.)
+  3) <script type="module">
+/* =====================================================================
+   JAVASCRIPT MODULE OVERVIEW (Single-file app)
+
+   Sections (use editor search for the header text):
+   1) Firebase setup (Auth + Firestore)
+   2) Global state (recipes, meal plan, inventory, UI selections)
+   3) UI utilities (toasts, modals, formatting helpers)
+   4) Recipes (CRUD, import/scrape, scaling, print)
+   5) Planner (week grid, assign recipes, clear week)
+   6) Grocery + Inventory (generate list, match pantry items)
+   7) Cook Mode (full-screen checklist + step timers)
+   8) View Week (modal with deduped recipe cards + day filter)
+   9) Initialization (auth listeners, first render)
+
+   Tip: Keep functional changes small and test after each edit.
+   ===================================================================== */
+
+     - Firebase setup (auth + Firestore)
+     - Global state + helpers
+     - Feature modules (Recipes, Planner, Grocery, Inventory, Cook Mode, Week View)
+     - Event wiring / initialization
+
+  Notes:
+  - This project intentionally keeps everything in one HTML file for easy copy/paste deployment.
+  - Major features are separated in the JS by section headers.
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -13,6 +50,14 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     
     <style>
+/* =====================================================================
+   GLOBAL STYLESHEET (Single-file app)
+   - Base tokens (colors, spacing, typography)
+   - Layout (app shell, panels, grids)
+   - Components (buttons, cards, pills, inputs)
+   - Modals & overlays (including Cook Mode + View Week)
+   ===================================================================== */
+
         :root {
             --bg-color: #F9F7F2;
             --card-bg: #FFFFFF;
@@ -1101,6 +1146,9 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
+        // =====================================================================
+        // 1) FIREBASE CONFIGURATION (Auth + Firestore)
+        // =====================================================================
         const firebaseConfig = {
           apiKey: "AIzaSyB5tfvrxjwVVp3fdWDP1p_EiqLpQc-yxT8",
           authDomain: "stocked-website.firebaseapp.com",
@@ -1114,6 +1162,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+
+        // =====================================================================
+        // 2) GLOBAL APPLICATION STATE
+        //    (Kept in-memory; persisted to Firestore / localStorage where needed)
+        // =====================================================================
         let currentUser = null;
         let isSignup = false; 
         
@@ -1162,6 +1215,9 @@ const PRESET_COLORS = [
         let wakeLock = null;
         let confirmCallback = null;
 
+        // =====================================================================
+        // 3) UI UTILITIES (toasts, modals, formatting helpers)
+        // =====================================================================
         function showToast(message) {
             const toast = document.getElementById('toast');
             toast.innerText = message;
@@ -2549,6 +2605,9 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
                 document.getElementById('loader').style.display = 'none';
             });
         };
+        // =====================================================================
+        // 8) VIEW WEEK (Modal: deduped recipe cards + day filter)
+        // =====================================================================
         // --- Weekly Planned Recipes (View Week Modal) ---
         const WEEK_DAY_LABELS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
         const WEEK_DAY_FULL = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
