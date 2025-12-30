@@ -933,7 +933,7 @@
                     <div class="inventory-add-row">
                         <div class="custom-select-container" id="inv-cat-select">
                             <select id="new-item-category">
-                                <option value="Produce">Produce</option><option value="Meat & Protein">Meat & Protein</option><option value="Dairy & Fridge">Dairy & Fridge</option><option value="Pantry & Grains">Pantry & Grains</option><option value="Spices & Seasonings">Spices</option>
+                                <option value="Produce">Produce</option><option value="Meat & Protein">Meat & Protein</option><option value="Dairy & Fridge">Dairy & Fridge</option><option value="Pantry & Grains">Pantry & Grains</option><option value="Condiments">Condiments</option><option value="Spices & Seasonings">Spices</option>
                             </select>
                         </div>
                         <input type="text" id="new-inventory-item" placeholder="Add item...">
@@ -953,7 +953,7 @@
                     <div class="inventory-add-row" style="border-top: 1px dashed var(--border); padding-top: 1.5rem;">
                         <div class="custom-select-container" id="groc-cat-select">
                             <select id="manual-grocery-category">
-                                <option value="Produce">Produce</option><option value="Meat & Protein">Meat & Protein</option><option value="Dairy & Fridge">Dairy & Fridge</option><option value="Pantry & Grains">Pantry & Grains</option><option value="Spices & Seasonings">Spices</option><option value="Other">Other</option>
+                                <option value="Produce">Produce</option><option value="Meat & Protein">Meat & Protein</option><option value="Dairy & Fridge">Dairy & Fridge</option><option value="Pantry & Grains">Pantry & Grains</option><option value="Condiments">Condiments</option><option value="Spices & Seasonings">Spices</option><option value="Other">Other</option>
                             </select>
                         </div>
                         <input type="text" id="manual-grocery-item" placeholder="Add extra item...">
@@ -1356,13 +1356,14 @@ const PRESET_COLORS = [
         let userProfile = { firstName: '', lastName: '' };
         let isDarkMode = false;
 
-        const INVENTORY_CATEGORIES = ["Produce", "Meat & Protein", "Dairy & Fridge", "Pantry & Grains", "Spices & Seasonings", "Other"];
+        const INVENTORY_CATEGORIES = ["Produce", "Meat & Protein", "Dairy & Fridge", "Pantry & Grains", "Condiments", "Spices & Seasonings", "Other"];
         const CATEGORY_KEYWORDS = {
             "Produce": ["onion", "garlic", "lemon", "lime", "tomato", "potato", "carrot", "lettuce", "spinach", "pepper", "fruit", "veg", "avocado", "banana", "herb", "cilantro", "parsley", "basil", "chive"],
             "Meat & Protein": ["chicken", "beef", "pork", "steak", "fish", "salmon", "tuna", "shrimp", "tofu", "meat", "bacon", "sausage", "turkey", "ham"],
             "Dairy & Fridge": ["milk", "cheese", "butter", "egg", "cream", "yogurt", "cheddar", "mozzarella", "parmesan"],
-            "Pantry & Grains": ["rice", "pasta", "noodle", "bread", "flour", "sugar", "cereal", "oat", "can", "bean", "lentil", "sauce", "jar", "honey", "nut"],
-            "Spices & Seasonings": ["salt", "pepper", "oil", "vinegar", "spice", "paprika", "cumin", "soy", "seasoning"]
+            "Pantry & Grains": ["rice", "pasta", "noodle", "bread", "flour", "sugar", "cereal", "oat", "can", "bean", "lentil", "jar", "honey", "nut"],
+            "Condiments": ["ketchup", "mustard", "mayo", "mayonnaise", "relish", "bbq", "barbecue", "hot sauce", "sriracha", "soy sauce", "soy", "teriyaki", "hoisin", "worcestershire", "fish sauce", "ranch", "dressing", "vinaigrette", "salsa", "pesto", "jam", "jelly", "pickle", "pickles", "olives", "capers", "vinegar", "maple syrup", "syrup"],
+            "Spices & Seasonings": ["salt", "pepper", "oil", "spice", "paprika", "cumin", "oregano", "thyme", "basil", "chili", "cinnamon", "nutmeg", "seasoning", "garlic powder", "onion powder"]
         };
 
         let currentDashboardFilter = "All";
@@ -3407,7 +3408,7 @@ window.openWeekRecipesModal = () => {
                     display = display.replace(/\s+/g, ' ').trim();
 
                     const key = normalizeIngredientForMatch(item);
-                    return { raw, item, display, key };
+                    return { raw, item, display, key, qty, packSize, unit, container };
                 }
 
                 // Backward-compatible helper (returns just the matching key)
@@ -3534,24 +3535,149 @@ window.openWeekRecipesModal = () => {
 
 
 
-        window.copyGroceryList = () => {
-            const listContainer = document.getElementById('grocery-list-output');
-            const items = listContainer.querySelectorAll('.inv-category-header, .grocery-item label');
-            let copyText = "GROCERY LIST:\n";
-            items.forEach(el => {
-                if(el.classList.contains('inv-category-header')) {
-                    copyText += `\n[${el.innerText}]\n`;
-                } else {
-                    copyText += `- ${el.innerText}\n`;
-                }
-            });
-            navigator.clipboard.writeText(copyText).then(() => {
-                const btn = document.getElementById('btn-copy-list');
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = `<i class="fas fa-check"></i> Copied!`;
-                setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
-            });
+                // Copy grocery list in a clean shopping format.
+// Goal: copy lines that read like a shopping list (count + ingredient), without prep verbs or measurement units.
+// Examples:
+//   "1/2 cup corn"           -> "corn"
+//   "2 tbsp chopped parsley"-> "parsley"
+//   "1 (14 oz) can corn"     -> "1 can of corn"
+// Notes:
+// - We keep count-style quantities (integers / simple ranges), but drop fractional/measure quantities.
+// - We keep container words (can, jar, bag, etc.) when present, but drop their sizes (oz/lb/ml/etc.).
+function cleanupCopyItemName(name) {
+    if (!name) return '';
+    let s = String(name);
+
+    // Drop parentheticals
+    s = s.replace(/\([^)]*\)/g, ' ');
+
+    // Drop trailing prep notes after commas
+    s = s.replace(/\s*,\s*(?:drained|drain|rinsed|peeled|seeded|cored|minced|diced|chopped|sliced|grated|shredded|softened|melted|room\s+temperature|divided|optional|to\s+taste|for\s+garnish|for\s+serving|plus\s+more.*|more\s+as\s+needed.*).*$/i, ' ');
+
+    // Remove measurement fragments anywhere in the string (e.g., "14 oz", "2 cups", "1 tbsp", "3 grams", etc.)
+    s = s.replace(/\b\d+(?:\.\d+)?\s*(?:teaspoons?|tsp|tablespoons?|tbsp|cups?|c|ounces?|oz|pounds?|lbs?|lb|grams?|g|kilograms?|kg|milliliters?|ml|liters?|l)\b/gi, ' ');
+
+    // Remove standalone measurement/unit words that sometimes get left behind
+    s = s.replace(/\b(?:teaspoons?|tsp|tablespoons?|tbsp|cups?|c|ounces?|oz|pounds?|lbs?|lb|grams?|g|kilograms?|kg|milliliters?|ml|liters?|l)\b/gi, ' ');
+
+    // Remove common prep verbs/descriptors (repeat a few times to peel stacked descriptors)
+    const prepWords = new Set([
+        'finely','roughly','coarsely','fresh','dried',
+        'small','medium','large','extra-large','x-large','xl',
+        'minced','diced','chopped','sliced','shredded','grated',
+        'peeled','seeded','cored','crushed','softened','melted',
+        'drained','rinsed','thawed','frozen','divided','optional'
+    ]);
+
+    for (let i = 0; i < 4; i++) {
+        s = s.trim();
+        const w = (s.split(/\s+/)[0] || '').toLowerCase();
+        if (prepWords.has(w)) {
+            s = s.split(/\s+/).slice(1).join(' ');
+            continue;
+        }
+        break;
+    }
+
+    // Remove "to taste"/"as needed" anywhere
+    s = s.replace(/\bto\s+taste\b/gi, ' ');
+    s = s.replace(/\bas\s+needed\b/gi, ' ');
+
+    return s.replace(/\s+/g, ' ').trim();
+}
+
+function keepCountQuantity(qtyRaw) {
+    if (!qtyRaw) return '';
+    const q = String(qtyRaw).trim();
+
+    // Drop fractions and unicode fractions (shopping list wants counts, not measures)
+    if (/[\/¼½¾⅓⅔⅛⅜⅝⅞]/.test(q)) return '';
+
+    // Keep integers and simple integer ranges like "2-3"
+    const m = q.match(/^(\d+)\s*(?:-\s*(\d+))?$/);
+    if (!m) return '';
+    return m[2] ? `${m[1]}-${m[2]}` : m[1];
+}
+
+function normalizeContainer(container, qty) {
+    if (!container) return '';
+    let c = String(container).trim().toLowerCase();
+
+    // Singularize common plurals when qty is 1
+    if (qty === '1') {
+        const map = {
+            'cans':'can',
+            'jars':'jar',
+            'bottles':'bottle',
+            'packages':'package',
+            'pkgs':'pkg',
+            'bags':'bag',
+            'boxes':'box',
+            'bunches':'bunch',
+            'heads':'head',
+            'cloves':'clove',
+            'slices':'slice',
+            'sticks':'stick',
+            'sprigs':'sprig'
         };
+        c = map[c] || c.replace(/s$/, '');
+    }
+    return c;
+}
+
+function formatGroceryLineForCopy(labelText) {
+    const parsed = parseIngredientLine(labelText);
+    if (!parsed) return (labelText || '').trim();
+
+    const qty = keepCountQuantity(parsed.qty || '');
+    const container = normalizeContainer(parsed.container || '', qty);
+    const item = cleanupCopyItemName(parsed.item || parsed.raw || '');
+
+    if (!item) return '';
+
+    // If we have a count quantity, keep it. Otherwise, copy just the ingredient name.
+    if (!qty) return item;
+
+    if (container) return `${qty} ${container} of ${item}`.replace(/\s+/g, ' ').trim();
+    return `${qty} ${item}`.replace(/\s+/g, ' ').trim();
+}
+
+window.copyGroceryList = () => {
+    // Use data (not DOM) so copy output is stable and clean.
+    const autoItems = computeAutoGroceryItems();
+    const manualItems = (manualGrocery || []);
+    const all = [...autoItems, ...manualItems];
+
+    // De-dupe lines by normalized ingredient key so manual + auto don't double-list.
+    const seen = new Set();
+    const lines = [];
+
+    all.forEach(it => {
+        const label = (it && it.name) ? it.name : '';
+        if (!label) return;
+
+        const parsed = parseIngredientLine(label);
+        const key = (parsed && parsed.key) ? parsed.key : normalizeIngredientForMatch(label);
+
+        if (!key || seen.has(key)) return;
+
+        const line = formatGroceryLineForCopy(label);
+        if (!line) return;
+
+        seen.add(key);
+        lines.push(line);
+    });
+
+    const copyText = lines.join('\n');
+
+    navigator.clipboard.writeText(copyText).then(() => {
+        const btn = document.getElementById('btn-copy-list');
+        if (!btn) return;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-check"></i> Copied!`;
+        setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+    });
+};
 
         // --- Grocery category editor (modal) ---
         // Keeps the main grocery list clean, and provides a focused place to re-categorize items.
