@@ -545,6 +545,25 @@
         .friend-name { font-weight: 600; color: var(--text-main); }
         .friend-email { font-size: 0.8rem; color: var(--text-light); }
 
+        /* Friends toolbar (Following / Followers) */
+        .friends-toolbar { display:flex; justify-content:space-between; align-items:center; margin: 0.25rem 0 1rem; }
+        .friends-view-toggle {
+            display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px;
+            background: var(--hover-bg); border: 1px solid rgba(0,0,0,0.03);
+        }
+        .friends-view-toggle button {
+            background: none; border: none; cursor: pointer;
+            padding: 0.55rem 1rem; border-radius: 999px;
+            font-weight: 800; font-size: 0.85rem; color: var(--text-light);
+            transition: 0.2s;
+        }
+        .friends-view-toggle button.active {
+            background: var(--card-bg);
+            color: var(--text-main);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .friends-view-toggle button:hover { color: var(--primary); }
+
         /* V.53 Toast Styles */
         .toast {
             visibility: hidden; min-width: 250px; margin-left: -125px;
@@ -840,6 +859,16 @@
             <div class="header-row">
                 <h2>Friends</h2>
                 <button class="btn-sm" onclick="openAddFriendModal()"><i class="fas fa-user-plus"></i> Add Friend</button>
+            </div>
+            <!-- Following / Followers toggle (lets you see who follows your cookbook) -->
+            <div class="friends-toolbar">
+                <div class="friends-view-toggle" role="tablist" aria-label="Friends views">
+                    <button id="friends-view-following" class="active" onclick="setFriendsView('following')" role="tab" aria-selected="true">Following</button>
+                    <button id="friends-view-followers" onclick="setFriendsView('followers')" role="tab" aria-selected="false">Followers</button>
+                </div>
+                <button class="btn-sm" id="friends-refresh-btn" onclick="refreshFollowers()" title="Refresh followers">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
             <div id="friends-list-container"></div>
         </section>
@@ -1298,7 +1327,7 @@
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, getDocs, query, where, arrayUnion } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
         // =====================================================================
         // 1) FIREBASE CONFIGURATION (Auth + Firestore)
@@ -1334,7 +1363,9 @@
         let groceryCategoryOverrides = {}; // auto-item category overrides by normalized ingredient key
         let groceryEventsBound = false; // prevents double-binding DOM events
 
-        let friends = []; 
+        let friends = []; // users you follow
+        let followers = []; // users who follow you
+        let friendsView = 'following'; // 'following' | 'followers'
         
                 let friendCategories = []; 
 const PRESET_COLORS = [
@@ -1783,7 +1814,23 @@ const PRESET_COLORS = [
                     } else {
                         friends.push(friendData);
                         await setDoc(doc(db, "users", currentUser.uid, "data", "friends"), { list: friends });
-                        renderFriendsList();
+                        // Keep public profile follow index in sync (supports follower discovery)
+                        await updatePublicProfileFollowingUids();
+                        // Track followers: when you follow someone, you are added to their followers list.
+                        // This powers the "Followers" view (who follows your cookbook).
+                        const followerEntry = {
+                            uid: currentUser.uid,
+                            firstName: userProfile.firstName || '',
+                            lastName: userProfile.lastName || '',
+                            email: currentUser.email
+                        };
+                        await setDoc(
+                            doc(db, "users", friendData.uid, "data", "followers"),
+                            { list: arrayUnion(followerEntry) },
+                            { merge: true }
+                        );
+
+                        renderFriendsView();
                         closeAddFriendModal();
                     }
                 } else {
@@ -1796,23 +1843,166 @@ const PRESET_COLORS = [
             document.getElementById('loader').style.display = 'none';
         };
 
-        function renderFriendsList() {
+        // --- FRIENDS VIEW (Following vs Followers) ---
+        window.refreshFollowers = async () => {
+            document.getElementById('loader').style.display = 'flex';
+            await refreshFollowersFromPublicProfiles();
+            renderFriendsView();
+            document.getElementById('loader').style.display = 'none';
+            showToast('Followers refreshed');
+        };
+
+        window.setFriendsView = async (view) => {
+            friendsView = (view === 'followers') ? 'followers' : 'following';
+            if (friendsView === 'followers') {
+                await refreshFollowersFromPublicProfiles();
+            }
+            renderFriendsView();
+        };
+
+        function dedupeByUid(list) {
+            const m = new Map();
+            (Array.isArray(list) ? list : []).forEach(x => {
+                if (x && x.uid) m.set(x.uid, x);
+            });
+            return Array.from(m.values());
+        }
+
+        /**
+         * Keep a lightweight reverse-index of follow relationships.
+         *
+         * Why:
+         * - Your original "following" list is stored under: users/{uid}/data/friends
+         * - To show "followers", we need a reverse mapping (who follows me)
+         *
+         * We maintain this in two places:
+         * 1) users/{followedUid}/data/followers (fast UI)
+         * 2) public_profiles/{safeEmail}.followingUids (queryable fallback)
+         *
+         * This also means: legacy follows created before this feature will appear
+         * after those users open the app once (their following list is synced).
+         */
+        async function updatePublicProfileFollowingUids() {
+            if (!currentUser || !currentUser.email) return;
+            const safeEmail = currentUser.email.replace(/\./g, ',');
+            const followingUids = (Array.isArray(friends) ? friends : [])
+                .map(f => f && f.uid)
+                .filter(Boolean);
+
+            try {
+                await setDoc(
+                    doc(db, "public_profiles", safeEmail),
+                    {
+                        uid: currentUser.uid,
+                        firstName: userProfile.firstName || '',
+                        lastName: userProfile.lastName || '',
+                        email: currentUser.email,
+                        followingUids
+                    },
+                    { merge: true }
+                );
+            } catch (e) {
+                console.warn("Could not update public profile following index:", e);
+            }
+        }
+
+        async function syncMyFollowingToTheirFollowers() {
+            if (!currentUser) return;
+            const entry = {
+                uid: currentUser.uid,
+                firstName: userProfile.firstName || '',
+                lastName: userProfile.lastName || '',
+                email: currentUser.email
+            };
+
+            const following = Array.isArray(friends) ? friends : [];
+            const writes = [];
+            following.forEach(f => {
+                if (!f || !f.uid) return;
+                writes.push(
+                    setDoc(
+                        doc(db, "users", f.uid, "data", "followers"),
+                        { list: arrayUnion(entry) },
+                        { merge: true }
+                    )
+                );
+            });
+
+            if (!writes.length) return;
+            const results = await Promise.allSettled(writes);
+            const rejected = results.filter(r => r.status === 'rejected');
+            if (rejected.length) console.warn("Some follower sync writes failed:", rejected.length);
+        }
+
+        async function refreshFollowersFromPublicProfiles() {
+            // Queryable fallback: anyone whose public profile says they follow you.
+            if (!currentUser) return;
+            try {
+                const q = query(
+                    collection(db, "public_profiles"),
+                    where("followingUids", "array-contains", currentUser.uid)
+                );
+                const snap = await getDocs(q);
+
+                const found = [];
+                snap.forEach(d => {
+                    const p = d.data();
+                    if (p && p.uid && p.uid !== currentUser.uid) found.push(p);
+                });
+
+                // Merge with whatever is already stored in your followers doc
+                followers = dedupeByUid([...(Array.isArray(followers) ? followers : []), ...found]);
+
+                // Optional persistence for faster future loads
+                await setDoc(
+                    doc(db, "users", currentUser.uid, "data", "followers"),
+                    { list: followers },
+                    { merge: true }
+                );
+            } catch (e) {
+                console.warn("Could not refresh followers from public profiles:", e);
+            }
+        }
+
+
+        function renderFriendsView() {
+            // Sync toggle UI
+            const btnFollowing = document.getElementById('friends-view-following');
+            const btnFollowers = document.getElementById('friends-view-followers');
+            if (btnFollowing && btnFollowers) {
+                const isFollowers = friendsView === 'followers';
+                btnFollowing.classList.toggle('active', !isFollowers);
+                btnFollowers.classList.toggle('active', isFollowers);
+                btnFollowing.setAttribute('aria-selected', String(!isFollowers));
+                btnFollowers.setAttribute('aria-selected', String(isFollowers));
+            }
+
+            // Defensive: avoid duplicates in UI
+            friends = dedupeByUid(friends);
+            followers = dedupeByUid(followers);
+
+            if (friendsView === 'followers') renderFollowersList();
+            else renderFollowingList();
+        }
+
+        function renderFollowingList() {
             const container = document.getElementById('friends-list-container');
             container.innerHTML = '';
-            if(friends.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-light)">No friends added yet.</div>';
+            if (!friends.length) {
+                container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-light)">Not following anyone yet.</div>';
                 return;
             }
             friends.forEach(f => {
-                const initial = f.firstName ? f.firstName.charAt(0).toUpperCase() : '?';
+                const displayName = (`${(f.firstName || '').trim()} ${(f.lastName || '').trim()}`).trim() || (f.email || '');
+                const initial = displayName ? displayName.charAt(0).toUpperCase() : '?';
                 const item = document.createElement('div');
                 item.className = 'friend-item';
                 item.innerHTML = `
                     <div style="display:flex; align-items:center;">
                         <div class="friend-avatar">${initial}</div>
                         <div class="friend-info">
-                            <div class="friend-name">${f.firstName} ${f.lastName}</div>
-                            <div class="friend-email">${f.email}</div>
+                            <div class="friend-name">${displayName}</div>
+                            <div class="friend-email">${f.email || ''}</div>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right" style="color:var(--text-light)"></i>
@@ -1822,9 +2012,38 @@ const PRESET_COLORS = [
             });
         }
 
+        function renderFollowersList() {
+            const container = document.getElementById('friends-list-container');
+            container.innerHTML = '';
+            if (!followers.length) {
+                container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-light)">No followers yet. When someone adds you, they\'ll show up here.</div>';
+                return;
+            }
+            followers.forEach(f => {
+                const displayName = (`${(f.firstName || '').trim()} ${(f.lastName || '').trim()}`).trim() || (f.email || '');
+                const initial = displayName ? displayName.charAt(0).toUpperCase() : '?';
+                const item = document.createElement('div');
+                item.className = 'friend-item';
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center;">
+                        <div class="friend-avatar">${initial}</div>
+                        <div class="friend-info">
+                            <div class="friend-name">${displayName}</div>
+                            <div class="friend-email">${f.email || ''}</div>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:var(--text-light)"></i>
+                `;
+                // Followers can also be opened like friends (view their cookbook)
+                item.onclick = () => loadFriendCookbook(f);
+                container.appendChild(item);
+            });
+        }
+
         async function loadFriendCookbook(friend) {
             document.getElementById('loader').style.display = 'flex';
-            document.getElementById('friend-cookbook-title').innerText = `${friend.firstName}'s Cookbook`;
+            const friendDisplayName = (`${(friend.firstName || '').trim()} ${(friend.lastName || '').trim()}`).trim() || (friend.email || 'Friend');
+            document.getElementById('friend-cookbook-title').innerText = `${friendDisplayName}'s Cookbook`;
             friendRecipes = [];
             friendCategories = [];
             currentFriendFilter = "All";
@@ -2021,6 +2240,8 @@ const PRESET_COLORS = [
             await setDoc(doc(db, "users", currentUser.uid, "data", "inventory"), { items: defaultInv });
             await setDoc(doc(db, "users", currentUser.uid, "data", "mealPlan"), { plan: {} });
             await setDoc(doc(db, "users", currentUser.uid, "data", "grocery"), { items: [], overrides: {} });
+            await setDoc(doc(db, "users", currentUser.uid, "data", "friends"), { list: [] });
+            await setDoc(doc(db, "users", currentUser.uid, "data", "followers"), { list: [] });
             await setDoc(doc(db, "users", currentUser.uid, "data", "settings"), { categories: appCategories });
             await saveProfile(); 
 
@@ -2057,6 +2278,9 @@ const PRESET_COLORS = [
             const friendsSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "friends"));
             friends = friendsSnap.exists() ? friendsSnap.data().list : [];
 
+            const followersSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "followers"));
+            followers = followersSnap.exists() ? (followersSnap.data().list || []) : [];
+
             
             const defaultCats = Array.isArray(appCategories) ? appCategories.map(c => ({ name: c.name, color: c.color })) : [];
             const setSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "settings"));
@@ -2092,12 +2316,25 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
             if(profSnap.exists()) userProfile = profSnap.data();
             else userProfile = { firstName: '', lastName: '' };
 
+
+            // --- FOLLOW DATA SYNC (Followers feature) ---
+            // 1) Update your public profile with a queryable "followingUids" array
+            await updatePublicProfileFollowingUids();
+
+            // 2) Ensure everyone you follow has you listed as a follower (reverse index)
+            // This is what makes Followers show up for the people you follow.
+            await syncMyFollowingToTheirFollowers();
+
+            // 3) Refresh your own followers list using the queryable fallback.
+            // This helps backfill follower lists once other users have synced.
+            await refreshFollowersFromPublicProfiles();
+
             renderGreeting();
             renderDashboardFilters();
             renderRecipes();
             renderMealPlan();
             renderInventory();
-            renderFriendsList();
+            renderFriendsView();
             generateGroceryList();
             bindGroceryCategoryEditEvents();
             document.getElementById('loader').style.display = 'none';
