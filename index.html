@@ -419,13 +419,32 @@
         .meal-slot:hover { background: var(--hover-bg); }
         .meal-slot.drag-over { background: var(--hover-bg); border: 2px dashed var(--primary); }
         
+        
+        /* Subtle highlight for today's day label (header only) */
+        .day-column.is-today .day-header {
+            background: rgba(92, 141, 137, 0.10);
+            border-bottom-color: transparent;
+            border-radius: 12px;
+            color: var(--primary);
+        }
+        
         .meal-slot[data-type^="dinner"] { height: 45px; padding: 2px; }
         .meal-slot[data-type^="dinner"] .slot-placeholder { font-size: 0.8rem; }
         .slot-placeholder { color: var(--text-light); font-size: 1.1rem; pointer-events: none; transition: 0.2s; }
         .meal-slot:hover .slot-placeholder { color: var(--primary); transform: scale(1.2); }
         
-        .planned-meal { background: var(--card-bg); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); cursor: default; font-weight: 500; font-size: 0.85rem; color: var(--text-main); }
+        .planned-meal { background: var(--card-bg); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%; height: 100%; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--primary); cursor: grab; font-weight: 500; font-size: 0.85rem; color: var(--text-main); }
+
+        .planned-meal:active { cursor: grabbing; }
         .meal-slot[data-type^="dinner"] .planned-meal { padding: 2px 8px; font-size: 0.75rem; border-radius: 6px; }
+
+
+        /* Make all meal categories the same height (Breakfast/Lunch/Dinner/Side) */
+        .meal-row-label.small { height: 90px; } /* override compact labels */
+        .meal-slot[data-type^="dinner"] { height: 90px; padding: 4px; }
+        .meal-slot[data-type^="dinner"] .slot-placeholder { font-size: 1.1rem; }
+        .meal-slot[data-type^="dinner"] .planned-meal { padding: 6px 10px; font-size: 0.85rem; border-radius: 8px; }
+
         .remove-meal { cursor: pointer; color: #D1D5DB; margin-left: 5px; transition: 0.2s;}
         .remove-meal:hover { color: var(--accent); }
 
@@ -2405,6 +2424,13 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
                     document.querySelectorAll('.mobile-nav-item')[mobIndex].classList.add('active');
                 }
             }
+
+            // Planner UX: lightly highlight the current day column
+            if (tabId === 'planning') {
+                // defer to ensure layout is ready (mobile/desktop nav changes)
+                requestAnimationFrame(applyPlannerTodayHighlight);
+            }
+
         };
 
         window.addEventListener('resize', () => {
@@ -2929,18 +2955,77 @@ const profSnap = await getDoc(doc(db, "users", currentUser.uid, "data", "profile
             grid.appendChild(fragment);
         }
 
-        window.drag = (ev, id) => { ev.dataTransfer.setData("recipeId", id); };
-        window.allowDrop = (ev) => { ev.preventDefault(); ev.target.closest('.meal-slot').classList.add('drag-over'); };
-        window.drop = (ev) => {
-            ev.preventDefault();
-            const slot = ev.target.closest('.meal-slot');
-            slot.classList.remove('drag-over');
-            const id = ev.dataTransfer.getData("recipeId");
-            if(!id) return;
-            updateMealSlot(slot.dataset.day, slot.dataset.type, id);
+        window.drag = (ev, id) => {
+            // Drag from a recipe card onto the planner
+            ev.dataTransfer.setData("recipeId", id);
+            ev.dataTransfer.setData("dragKind", "recipe");
         };
 
-        window.openMealSelector = (day, type) => {
+        window.dragPlanned = (ev, plannerKey) => {
+            // Drag an already-planned item to move/swap it to another slot
+            ev.dataTransfer.setData("plannerKey", plannerKey);
+            ev.dataTransfer.setData("dragKind", "planned");
+        };
+
+        // ---- Planner drag/drop helpers ----
+const clearPlannerDragOver = () => {
+    document.querySelectorAll('.meal-slot.drag-over').forEach(s => s.classList.remove('drag-over'));
+};
+
+// Highlight ONLY the slot currently under the cursor during an active drag.
+window.allowDrop = (ev) => {
+    ev.preventDefault();
+    clearPlannerDragOver();
+    const slot = ev.target.closest('.meal-slot');
+    if (slot) slot.classList.add('drag-over');
+};
+
+        // Clear any leftover drag-over highlights
+        document.addEventListener('dragend', clearPlannerDragOver, true);
+        document.addEventListener('drop', clearPlannerDragOver, true);
+        window.drop = async (ev) => {
+            ev.preventDefault();
+            const slot = ev.target.closest('.meal-slot');
+            if (!slot) return;
+
+            clearPlannerDragOver();
+
+            const targetKey = `${slot.dataset.day}-${slot.dataset.type}`;
+            const dragKind = ev.dataTransfer.getData("dragKind");
+
+            // Case 1: Dropping a recipe card (overwrite target slot)
+            const recipeId = ev.dataTransfer.getData("recipeId");
+            if (recipeId) {
+                await updateMealSlot(slot.dataset.day, slot.dataset.type, recipeId);
+                return;
+            }
+
+            // Case 2: Moving an already-planned recipe (move or swap)
+            const sourceKey = ev.dataTransfer.getData("plannerKey");
+            if (!sourceKey || !mealPlan[sourceKey]) return;
+
+            if (sourceKey === targetKey) return;
+
+            const sourcePlan = mealPlan[sourceKey];
+            const targetPlan = mealPlan[targetKey] || null;
+
+            // Move source → target
+            mealPlan[targetKey] = { ...sourcePlan, day: slot.dataset.day, type: slot.dataset.type };
+
+            // If target was occupied, swap back into source; otherwise clear source.
+            if (targetPlan) {
+                mealPlan[sourceKey] = { ...targetPlan, day: sourcePlan.day, type: sourcePlan.type };
+                showToast('Swapped meals');
+            } else {
+                delete mealPlan[sourceKey];
+                showToast('Moved meal');
+            }
+
+            renderMealPlan();
+            generateGroceryList();
+            await saveMealPlanToCloud();
+        };
+window.openMealSelector = (day, type) => {
             activeSlot = { day, type };
             currentPickerFilter = "All";
             renderPickerFilters();
@@ -3242,6 +3327,16 @@ window.openWeekRecipesModal = () => {
             return dow === 0 ? 6 : (dow - 1); // map to Mon=0..Sun=6
         }
 
+
+        // Highlight today's day column in the Planner for quick orientation
+        function applyPlannerTodayHighlight() {
+            const cols = document.querySelectorAll('#planning .planner-grid .day-column');
+            if (!cols || !cols.length) return;
+            cols.forEach(c => c.classList.remove('is-today'));
+            const idx = getTodayPlannerIndex(); // 0..6 (Mon..Sun)
+            if (idx >= 0 && idx < cols.length) cols[idx].classList.add('is-today');
+        }
+
         window.openAddToPlanModal = (recipeId) => {
             addPlanRecipeId = recipeId;
             addPlanDayIdx = getTodayPlannerIndex();
@@ -3333,7 +3428,7 @@ window.openWeekRecipesModal = () => {
                     const firstCatName = Array.isArray(recipe.category) ? recipe.category[0] : recipe.category;
                     const color = getColorForCategory(firstCatName || 'Other');
                     slot.innerHTML = `
-                        <div class="planned-meal" style="border-left-color: ${color}">
+                        <div class="planned-meal" draggable="true" ondragstart="dragPlanned(event, '${key}')" style="border-left-color: ${color}">
                             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${recipe.title}</span>
                             <i class="fas fa-times remove-meal" onclick="removeFromPlan(event, '${key}')"></i>
                         </div>
@@ -3964,7 +4059,7 @@ window.copyGroceryList = () => {
                 const safeCat = escapeHtml(cat);
                 listEl.innerHTML += `
                     <div class="grocery-edit-category" data-category="${safeCat}">
-                        <div class="inv-category-header" style="margin-top:0; cursor: default;">${safeCat}</div>
+                        <div class="inv-category-header" style="margin-top:0; cursor: grab;">${safeCat}</div>
                         <div class="grocery-edit-dropzone" data-category="${safeCat}">
                             ${items.map(item => {
                                 const isManualItem = !!item.isManual;
