@@ -4279,6 +4279,8 @@ window.copyGroceryList = () => {
 
         // --- COOK MODE (Fullscreen) with BIG CHECKLIST + STEP TIMERS ---
         const cookTimers = new Map();
+        // Reuse a single AudioContext for timer beeps (reduces lag and improves browser compatibility)
+        let cookAudioCtx = null;
         let cookModeEventsBound = false;
 
         function escapeHtml(str) {
@@ -4325,28 +4327,69 @@ window.copyGroceryList = () => {
             return null;
         }
 
-        function playTimerDoneSignal() {
-            // Lightweight beep + optional vibration (safe no-op if unsupported)
+        
+function playTimerDoneSignal() {
+    // Audible "done" alarm (longer + louder) + optional vibration
+    try { if (navigator.vibrate) navigator.vibrate([200, 120, 200, 120, 200, 120, 400]); } catch(e) {}
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+        if (!cookAudioCtx) cookAudioCtx = new AudioCtx();
+        const ctx = cookAudioCtx;
+
+        const scheduleBeep = (startTime, freq, durationSec, peakGain) => {
             try {
-                if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
-            } catch(e) {}
-            try {
-                const AudioCtx = window.AudioContext || window.webkitAudioContext;
-                if (!AudioCtx) return;
-                const ctx = new AudioCtx();
                 const o = ctx.createOscillator();
                 const g = ctx.createGain();
-                o.type = 'sine';
-                o.frequency.value = 880;
-                g.gain.value = 0.05;
+
+                // Slightly smoother but still attention-grabbing
+                o.type = 'triangle';
+                o.frequency.setValueAtTime(freq, startTime);
+
+                // Envelope (attack/decay) to avoid clicks
+                g.gain.setValueAtTime(0.0001, startTime);
+                g.gain.exponentialRampToValueAtTime(peakGain, startTime + 0.03);
+                g.gain.exponentialRampToValueAtTime(0.0001, startTime + durationSec);
+
                 o.connect(g);
                 g.connect(ctx.destination);
-                o.start();
-                setTimeout(() => { o.stop(); ctx.close(); }, 250);
-            } catch(e) {}
-        }
 
-        function clearAllCookTimers() {
+                o.start(startTime);
+                o.stop(startTime + durationSec + 0.02);
+            } catch(e) {}
+        };
+
+        const alarmPattern = () => {
+            const base = ctx.currentTime + 0.02;
+            const duration = 0.38;     // longer beep
+            const peak = 0.28;         // louder alarm (be mindful: too high can clip on some speakers)
+
+            // ~3.5s alternating tones to be more noticeable
+            const seq = [
+                { t: 0.00, f: 880 },
+                { t: 0.45, f: 988 },
+                { t: 0.90, f: 880 },
+                { t: 1.35, f: 988 },
+                { t: 1.80, f: 880 },
+                { t: 2.25, f: 988 },
+                { t: 2.70, f: 880 },
+                { t: 3.15, f: 988 }
+            ];
+            seq.forEach(b => scheduleBeep(base + b.t, b.f, duration, peak));
+        };
+
+        // If the context is suspended (common until a user gesture), resume then beep.
+        if (ctx.state === 'suspended') {
+            ctx.resume().then(alarmPattern).catch(() => {});
+        } else {
+            alarmPattern();
+        }
+    } catch(e) {}
+}
+
+function clearAllCookTimers() {
             cookTimers.forEach(state => {
                 if (state.interval) clearInterval(state.interval);
             });
